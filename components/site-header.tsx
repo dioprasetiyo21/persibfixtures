@@ -36,7 +36,7 @@ export function SiteHeader({
         <div className="flex items-center gap-4 sm:gap-5">
           <div className="flex size-20 shrink-0 items-center justify-center rounded-full bg-white p-2 shadow-lg ring-4 ring-white/15 sm:size-24">
             <Image
-              src="/logos/persib.svg"
+              src="/logos/persib.png"
               alt="Persib Bandung official crest"
               width={96}
               height={96}
