@@ -1,0 +1,4 @@
+{
+  "_comment": "Manual score overrides keyed by fixture id, e.g. \"sl-09\": { \"persib\": 2, \"opponent\": 1 }. Applied on top of fixtures.json and below SCORES_SOURCE_URL.",
+  "results": {}
+}

@@ -14,6 +14,7 @@ import { UpcomingStrip } from '@/components/upcoming-strip'
 import { useFixtures } from '@/hooks/use-fixtures'
 import { exportCSV, exportICS } from '@/lib/export'
 import {
+  isAwaitingResult,
   isCompleted,
   isUpcoming,
   matchesQuery,
@@ -25,12 +26,13 @@ import {
 import type { CompetitionId, Fixture, ViewMode } from '@/lib/types'
 
 export function PersibCalendarApp() {
-  const { data, error, isLoading, mutate } = useFixtures()
+  const { data, error, isLoading, mutate, refreshScores, isRefreshing, refreshError } = useFixtures()
   const [competition, setCompetition] = useState<CompetitionId | 'ALL'>('ALL')
   const [view, setView] = useState<ViewMode>('season')
   const [query, setQuery] = useState('')
   const [focusOverride, setFocusOverride] = useState<string | null>(null)
-  const [selected, setSelected] = useState<Fixture | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [refreshNote, setRefreshNote] = useState<{ at: string; gained: number; sourceError?: string } | null>(null)
 
   const todayKey = todayKeyWIB()
   const months = useMemo(
@@ -51,8 +53,12 @@ export function PersibCalendarApp() {
     return c
   }, [all])
 
+  const selected = useMemo(() => all.find((f) => f.id === selectedId) ?? null, [all, selectedId])
+  const setSelected = (f: Fixture | null) => setSelectedId(f?.id ?? null)
+
   const upcoming = all.filter((f) => isUpcoming(f))
   const completed = all.filter(isCompleted)
+  const pendingCount = all.filter((f) => isAwaitingResult(f)).length
   const nextFive = upcoming.filter((f) => f.date).slice(0, 5)
   const next = nextFive[0] ?? null
   const record = completed.reduce(
@@ -65,6 +71,17 @@ export function PersibCalendarApp() {
     },
     { w: 0, d: 0, l: 0 },
   )
+
+  async function handleRefresh() {
+    const before = completed.length
+    const next = await refreshScores()
+    if (!next) return
+    setRefreshNote({
+      at: next.refreshedAt ?? new Date().toISOString(),
+      gained: next.fixtures.filter(isCompleted).length - before,
+      sourceError: next.scores?.error,
+    })
+  }
 
   function scrollToMonth(m: string) {
     requestAnimationFrame(() => {
@@ -131,6 +148,9 @@ export function PersibCalendarApp() {
                   onPrint={() => window.print()}
                   onCSV={() => exportCSV(filtered)}
                   onICS={() => exportICS(filtered)}
+                  onRefresh={handleRefresh}
+                  isRefreshing={isRefreshing}
+                  pendingCount={pendingCount}
                 />
                 <CompetitionFilter value={competition} onChange={setCompetition} counts={counts} />
               </div>
@@ -139,6 +159,33 @@ export function PersibCalendarApp() {
                 All kickoff times in WIB (UTC+7). <span className="font-semibold">*</span> provisional kickoff awaiting official confirmation.
                 Striped cells are knockout fixtures that depend on qualification.
                 {hasFilters && ` Showing ${filtered.length} of ${all.length} matches.`}
+              </p>
+              <p role="status" aria-live="polite" className="-mt-1 text-xs text-muted-foreground">
+                {refreshError ? (
+                  <span className="font-semibold text-red-700">Could not refresh scores: {refreshError}</span>
+                ) : refreshNote ? (
+                  <>
+                    Scores checked at{' '}
+                    {new Date(refreshNote.at).toLocaleTimeString('en-GB', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      timeZone: 'Asia/Jakarta',
+                    })}{' '}
+                    WIB ·{' '}
+                    <span className="font-semibold">
+                      {refreshNote.gained > 0
+                        ? `${refreshNote.gained} new ${refreshNote.gained === 1 ? 'result' : 'results'}`
+                        : 'no new results yet'}
+                    </span>
+                    {refreshNote.sourceError && (
+                      <span className="font-semibold text-amber-700"> · scores source unavailable ({refreshNote.sourceError})</span>
+                    )}
+                  </>
+                ) : pendingCount > 0 ? (
+                  `${pendingCount} finished ${pendingCount === 1 ? 'match has' : 'matches have'} no score yet. Use Refresh scores to check for results.`
+                ) : (
+                  'Scores update automatically while a match is in progress.'
+                )}
               </p>
 
               {filtered.length === 0 ? (
@@ -180,7 +227,12 @@ export function PersibCalendarApp() {
         )}
       </main>
 
-      <MatchDetailsModal fixture={selected} onOpenChange={(o) => !o && setSelected(null)} />
+      <MatchDetailsModal
+        fixture={selected}
+        onOpenChange={(o) => !o && setSelected(null)}
+        onRefresh={handleRefresh}
+        isRefreshing={isRefreshing}
+      />
     </>
   )
 }

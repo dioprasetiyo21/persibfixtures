@@ -8,6 +8,7 @@ import {
   FileDown,
   FileSpreadsheet,
   Printer,
+  RefreshCw,
   Search,
   X,
 } from 'lucide-react'
@@ -43,6 +44,9 @@ interface CalendarToolbarProps {
   onPrint: () => void
   onCSV: () => void
   onICS: () => void
+  onRefresh: () => void
+  isRefreshing: boolean
+  pendingCount: number
 }
 
 export function CalendarToolbar(p: CalendarToolbarProps) {
@@ -130,6 +134,19 @@ export function CalendarToolbar(p: CalendarToolbarProps) {
             </button>
           )}
         </div>
+        <Button variant="outline" size="sm" onClick={p.onRefresh} disabled={p.isRefreshing} className="bg-white">
+          <RefreshCw aria-hidden className={cn(p.isRefreshing && 'animate-spin')} />
+          <span className="hidden sm:inline">{p.isRefreshing ? 'Refreshing…' : 'Refresh scores'}</span>
+          <span className="sr-only sm:hidden">Refresh scores</span>
+          {p.pendingCount > 0 && !p.isRefreshing && (
+            <span
+              className="flex min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold leading-4 text-white"
+              title={`${p.pendingCount} finished ${p.pendingCount === 1 ? 'match' : 'matches'} without a score`}
+            >
+              {p.pendingCount}
+            </span>
+          )}
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger render={<Button size="sm" />}>
             <Download aria-hidden /> Export

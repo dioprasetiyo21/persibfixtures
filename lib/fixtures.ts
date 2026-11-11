@@ -61,6 +61,44 @@ export function isCompleted(f: Fixture) {
   return f.status === 'finished'
 }
 
+const MATCH_WINDOW_MS = 2.25 * 60 * 60 * 1000
+const POLL_WINDOW_MS = 8 * 60 * 60 * 1000
+
+function isOpenMatch(f: Fixture) {
+  return (f.status === 'scheduled' || f.status === 'tentative') && !f.score && !!f.date
+}
+
+/** Kickoff has passed and the match is probably still being played. */
+export function isLive(f: Fixture, now = new Date()) {
+  if (!isOpenMatch(f) || !f.kickoff) return false
+  const start = kickoffDate(f)?.getTime() ?? Infinity
+  return start <= now.getTime() && now.getTime() < start + MATCH_WINDOW_MS
+}
+
+/** The match should be over but no final score has been recorded yet. */
+export function isAwaitingResult(f: Fixture, now = new Date()) {
+  if (!isOpenMatch(f) || isLive(f, now)) return false
+  const end = f.kickoff
+    ? (kickoffDate(f)?.getTime() ?? Infinity) + MATCH_WINDOW_MS
+    : new Date(`${f.date}T23:59:00+07:00`).getTime()
+  return end <= now.getTime()
+}
+
+/** True while a match is live or just ended, so the app should keep polling for the score. */
+export function needsScorePolling(list: Fixture[], now = new Date()) {
+  return list.some((f) => {
+    if (!isLive(f, now) && !isAwaitingResult(f, now)) return false
+    const start = kickoffDate(f)?.getTime() ?? 0
+    return now.getTime() - start < POLL_WINDOW_MS
+  })
+}
+
+export function statusLabel(f: Fixture, now = new Date()) {
+  if (isLive(f, now)) return 'In progress'
+  if (isAwaitingResult(f, now)) return 'Awaiting result'
+  return STATUS_LABEL[f.status]
+}
+
 export function isUpcoming(f: Fixture, now = new Date()) {
   if (f.status === 'finished' || f.status === 'cancelled') return false
   if (!f.date) return true

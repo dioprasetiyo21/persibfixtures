@@ -1,21 +1,34 @@
 'use client'
 
 import { useState } from 'react'
-import { CalendarPlus, Check, ExternalLink, Share2 } from 'lucide-react'
+import { CalendarPlus, Check, ExternalLink, RefreshCw, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { TeamCrest } from '@/components/team-crest'
 import { COMPETITION_MAP } from '@/lib/competitions'
-import { formatLongDate, homeAway, scoreline, STATUS_LABEL, venueLabel } from '@/lib/fixtures'
+import {
+  formatLongDate,
+  homeAway,
+  isAwaitingResult,
+  isLive,
+  scoreline,
+  statusLabel,
+  venueLabel,
+} from '@/lib/fixtures'
 import { exportICS, shareText } from '@/lib/export'
 import type { Fixture } from '@/lib/types'
+import { cn } from '@/lib/utils'
 
 export function MatchDetailsModal({
   fixture,
   onOpenChange,
+  onRefresh,
+  isRefreshing,
 }: {
   fixture: Fixture | null
   onOpenChange: (open: boolean) => void
+  onRefresh: () => void
+  isRefreshing: boolean
 }) {
   const [copied, setCopied] = useState(false)
   const f = fixture
@@ -54,8 +67,9 @@ export function MatchDetailsModal({
             ['Competition', `${comp.name} · ${f.round}`],
             ['Stadium', venueLabel(f)],
             ['Persib', f.venueType === 'tba' ? 'Home/away TBA' : f.venueType === 'home' ? 'Home' : f.venueType === 'away' ? 'Away' : 'Neutral'],
-            ['Status', STATUS_LABEL[f.status]],
+            ['Status', statusLabel(f)],
           ]
+          const pending = isLive(f) || isAwaitingResult(f)
           if (f.notes) rows.push(['Notes', f.notes])
           return (
             <>
@@ -77,7 +91,15 @@ export function MatchDetailsModal({
                       {score ?? 'VS'}
                     </div>
                     <div className="text-[10px] font-bold uppercase tracking-widest opacity-85">
-                      {f.status === 'finished' ? 'Full time' : f.kickoff ? `${f.kickoff} WIB` : 'KO TBA'}
+                      {f.status === 'finished'
+                        ? 'Full time'
+                        : isLive(f)
+                          ? 'In progress'
+                          : isAwaitingResult(f)
+                            ? 'Awaiting result'
+                            : f.kickoff
+                              ? `${f.kickoff} WIB`
+                              : 'KO TBA'}
                     </div>
                   </div>
                   <div className="flex flex-col items-center gap-2 text-center">
@@ -115,6 +137,12 @@ export function MatchDetailsModal({
                 {f.date && (
                   <Button variant="outline" size="sm" onClick={() => exportICS([f], `persib-${f.id}.ics`)}>
                     <CalendarPlus aria-hidden /> Add to calendar
+                  </Button>
+                )}
+                {pending && (
+                  <Button variant="outline" size="sm" onClick={onRefresh} disabled={isRefreshing}>
+                    <RefreshCw aria-hidden className={cn(isRefreshing && 'animate-spin')} />
+                    {isRefreshing ? 'Checking…' : 'Refresh score'}
                   </Button>
                 )}
                 <Button size="sm" onClick={handleShare}>

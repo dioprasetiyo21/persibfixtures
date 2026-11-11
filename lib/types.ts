@@ -48,9 +48,24 @@ export interface SeasonMeta {
   notes: string
 }
 
+export interface ScoreResult {
+  persib: number
+  opponent: number
+}
+
+export interface ScoresInfo {
+  /** Where the newest scores came from. */
+  origin: 'remote' | 'local' | 'dataset'
+  /** Number of fixtures whose score was filled in by results.json or the remote source. */
+  applied: number
+  error?: string
+}
+
 export interface FixturesPayload {
   meta: SeasonMeta
   fixtures: Fixture[]
+  refreshedAt?: string
+  scores?: ScoresInfo
 }
 
 export type ViewMode = 'season' | 'month' | 'upcoming' | 'completed'
