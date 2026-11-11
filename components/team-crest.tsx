@@ -1,9 +1,28 @@
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { teamInitials } from '@/lib/fixtures'
+import { teamLogo } from '@/lib/team-logos'
+
+/** Bare club logo for dense calendar cells. Renders nothing when no logo file exists. */
+export function TeamLogo({ name, className }: { name: string; className?: string }) {
+  const src = teamLogo(name)
+  if (!src) return null
+  return (
+    <Image
+      src={src}
+      alt=""
+      aria-hidden
+      decoding="async"
+      width={64}
+      height={64}
+      className={cn('size-6 shrink-0 object-contain', className)}
+    />
+  )
+}
 
 export function TeamCrest({ name, className }: { name: string; className?: string }) {
-  if (name === 'Persib Bandung') {
+  const src = teamLogo(name)
+  if (src) {
     return (
       <div
         className={cn(
@@ -12,8 +31,8 @@ export function TeamCrest({ name, className }: { name: string; className?: strin
         )}
       >
         <Image
-          src="/logos/persib.svg"
-          alt="Persib Bandung"
+          src={src}
+          alt={`${name} crest`}
           width={64}
           height={64}
           className="h-full w-full object-contain"

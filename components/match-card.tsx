@@ -1,12 +1,17 @@
+import { TeamLogo } from '@/components/team-crest'
 import { COMPETITION_MAP } from '@/lib/competitions'
 import {
   formatShortDate,
+  isAwaitingResult,
+  isLive,
   resultOutcome,
   scoreline,
   shortTeam,
   STATUS_LABEL,
+  statusLabel,
   venueLabel,
 } from '@/lib/fixtures'
+import { teamLogo } from '@/lib/team-logos'
 import type { Fixture } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { MapPin } from 'lucide-react'
@@ -23,11 +28,13 @@ function timeLabel(f: Fixture) {
   return f.kickoff ?? 'TBA'
 }
 
-function statusLine(f: Fixture) {
+function statusLine(f: Fixture, large = false) {
   if (f.status === 'finished') {
     const o = resultOutcome(f)
     return `FT${o ? ` · ${o}` : ''}`
   }
+  if (isLive(f)) return 'LIVE'
+  if (isAwaitingResult(f)) return large ? 'AWAITING RESULT' : 'PENDING'
   if (f.status === 'postponed') return 'POSTPONED'
   if (f.status === 'cancelled') return 'CANCELLED'
   if (f.venueType === 'tba') return f.status === 'tentative' ? 'IF QUALIFIED' : 'TBA'
@@ -51,6 +58,7 @@ export function MatchCard({ fixture: f, onSelect, variant, day, isToday }: Match
   const muted = f.status === 'cancelled' || f.status === 'postponed'
   const style = { backgroundColor: comp.color, color: comp.text }
   const dashed = f.status === 'tentative' || f.status === 'tba'
+  const hasLogo = !!teamLogo(f.opponent)
 
   if (variant === 'cell' || variant === 'cell-large') {
     const large = variant === 'cell-large'
@@ -82,44 +90,51 @@ export function MatchCard({ fixture: f, onSelect, variant, day, isToday }: Match
           </span>
         </span>
         <span className="mt-auto flex flex-col items-center text-center">
-          <span
-            className={cn(
-              'font-display font-bold tabular-nums leading-none',
-              large ? 'text-xl' : 'text-[13px]',
-            )}
-          >
-            {f.status === 'finished' && score ? score : timeLabel(f)}
-            {f.kickoff && !f.kickoffConfirmed && f.status !== 'finished' && (
-              <sup className="ml-px text-[0.6em]" aria-hidden>
-                *
-              </sup>
-            )}
+          <span className={cn('flex items-center justify-center', large ? 'gap-2' : 'flex-col gap-px')}>
+            {hasLogo && <TeamLogo name={f.opponent} className={large ? 'size-9' : 'size-[22px]'} />}
+            <span className="flex flex-col items-center">
+              <span
+                className={cn(
+                  'font-display font-bold tabular-nums leading-none',
+                  large ? 'text-xl' : 'text-[13px]',
+                )}
+              >
+                {f.status === 'finished' && score ? score : timeLabel(f)}
+                {f.kickoff && !f.kickoffConfirmed && f.status !== 'finished' && (
+                  <sup className="ml-px text-[0.6em]" aria-hidden>
+                    *
+                  </sup>
+                )}
+              </span>
+              <span
+                className={cn(
+                  'font-bold uppercase tracking-wider opacity-80',
+                  large ? 'mt-0.5 text-[10px]' : 'text-[7px] leading-[10px]',
+                )}
+              >
+                {statusLine(f, large)}
+              </span>
+            </span>
           </span>
-          <span
-            className={cn(
-              'w-full truncate font-semibold uppercase leading-tight',
-              large ? 'mt-1 text-sm' : 'text-[8.5px]',
-            )}
-          >
-            {large ? (
-              <>
-                PERSIB {f.status === 'finished' && score ? score : 'vs'} {shortTeam(f.opponent)}
-              </>
-            ) : (
-              <>
-                {f.venueType === 'away' ? '@ ' : f.venueType === 'tba' ? '' : 'vs '}
-                {f.opponent === 'TBD' ? f.round.split(' · ')[0] : shortTeam(f.opponent)}
-              </>
-            )}
-          </span>
-          <span
-            className={cn(
-              'font-bold uppercase tracking-wider opacity-80',
-              large ? 'text-[10px]' : 'text-[7px] leading-[10px]',
-            )}
-          >
-            {statusLine(f)}
-          </span>
+          {(large || !hasLogo) && (
+            <span
+              className={cn(
+                'w-full truncate font-semibold uppercase leading-tight',
+                large ? 'mt-1 text-sm' : 'text-[8.5px]',
+              )}
+            >
+              {large ? (
+                <>
+                  PERSIB {f.status === 'finished' && score ? score : 'vs'} {shortTeam(f.opponent)}
+                </>
+              ) : (
+                <>
+                  {f.venueType === 'away' ? '@ ' : f.venueType === 'tba' ? '' : 'vs '}
+                  {f.opponent === 'TBD' ? f.round.split(' · ')[0] : shortTeam(f.opponent)}
+                </>
+              )}
+            </span>
+          )}
         </span>
       </button>
     )
@@ -137,7 +152,10 @@ export function MatchCard({ fixture: f, onSelect, variant, day, isToday }: Match
         <span className="font-display text-[10px] font-bold tabular-nums">
           {f.status === 'finished' && score ? score : timeLabel(f)}
         </span>
-        <span className="truncate">{shortTeam(f.opponent)}</span>
+        <span className="flex min-w-0 items-center gap-0.5">
+          <TeamLogo name={f.opponent} className="size-3.5" />
+          {!hasLogo && <span className="truncate">{shortTeam(f.opponent)}</span>}
+        </span>
       </button>
     )
   }
@@ -161,13 +179,22 @@ export function MatchCard({ fixture: f, onSelect, variant, day, isToday }: Match
               {comp.short}
             </span>
           </span>
-          <span className="font-display text-lg font-bold uppercase leading-tight text-foreground">
-            {f.venueType === 'away' ? `${shortTeam(f.opponent)} vs Persib` : `Persib vs ${shortTeam(f.opponent)}`}
+          <span className="flex items-center justify-between gap-2">
+            <span className="font-display text-lg font-bold uppercase leading-tight text-foreground">
+              {f.venueType === 'away' ? `${shortTeam(f.opponent)} vs Persib` : `Persib vs ${shortTeam(f.opponent)}`}
+            </span>
+            {hasLogo && <TeamLogo name={f.opponent} className="size-10" />}
           </span>
           <span className="mt-auto flex items-center justify-between text-xs">
             <span className="font-display text-base font-bold tabular-nums text-navy">
-              {f.kickoff ? `${f.kickoff} WIB` : 'Kickoff TBA'}
-              {f.kickoff && !f.kickoffConfirmed && <span className="text-muted-foreground">*</span>}
+              {f.status === 'finished' && score
+                ? `FT ${score}`
+                : f.kickoff
+                  ? `${f.kickoff} WIB`
+                  : 'Kickoff TBA'}
+              {f.kickoff && !f.kickoffConfirmed && f.status !== 'finished' && (
+                <span className="text-muted-foreground">*</span>
+              )}
             </span>
             <span className="font-semibold uppercase tracking-wider text-muted-foreground">
               {f.venueType === 'tba' ? 'TBA' : f.venueType}
@@ -195,6 +222,11 @@ export function MatchCard({ fixture: f, onSelect, variant, day, isToday }: Match
           {formatShortDate(f.date).split(' ').slice(1).join(' ') || 'TBA'}
         </span>
       </span>
+      {hasLogo && (
+        <span className="flex shrink-0 items-center pl-3">
+          <TeamLogo name={f.opponent} className="size-9" />
+        </span>
+      )}
       <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 px-3 py-2">
         <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: comp.color === '#20C96B' ? '#12834A' : comp.color === '#F29A43' ? '#B5621A' : comp.color }}>
           {comp.name} · {f.round}
@@ -227,8 +259,13 @@ export function MatchCard({ fixture: f, onSelect, variant, day, isToday }: Match
             {f.kickoff && !f.kickoffConfirmed && <span className="text-muted-foreground">*</span>}
           </span>
         )}
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          {STATUS_LABEL[f.status]}
+        <span
+          className={cn(
+            'text-[10px] font-semibold uppercase tracking-wider text-muted-foreground',
+            (isLive(f) || isAwaitingResult(f)) && 'text-amber-700',
+          )}
+        >
+          {statusLabel(f)}
         </span>
       </span>
     </button>
