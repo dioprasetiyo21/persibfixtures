@@ -17,6 +17,12 @@ const TEAM_LOGOS: Record<string, string> = {
   'PSIM Yogyakarta': '/logos/sm/psim.png',
   'PSM Makassar': '/logos/sm/psm.png',
   'PSS Sleman': '/logos/sm/pss.png',
+  'Port FC': '/logos/sm/acc-port.png',
+  'Shan United': '/logos/sm/acc-shan.png',
+  'Lion City Sailors': '/logos/sm/acc-lcs.png',
+  "Johor Darul Ta'zim": '/logos/sm/acc-jdt.png',
+  'PKR Svay Rieng': '/logos/sm/acc-svay.png',
+  'Công An Hà Nội': '/logos/sm/acc-cahn.png',
 }
 
 export function teamLogo(name: string): string | null {
