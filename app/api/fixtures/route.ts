@@ -1,5 +1,6 @@
 import dataset from '@/data/fixtures.json'
 import localResults from '@/data/results.json'
+import { fetchSourceMatches, matchToFixtures, pendingFixtures } from '@/lib/score-sources'
 import type {
   Fixture,
   FixturesPayload,
@@ -99,19 +100,35 @@ export async function GET(request: Request) {
       base = (await res.json()) as Dataset
     }
 
-    let results = parseResults(localResults)
-    let origin: ScoresInfo['origin'] = Object.keys(results).length > 0 ? 'local' : 'dataset'
-    let scoresError: string | undefined
+    const errors: string[] = []
+
+    const { matches, reports } = await fetchSourceMatches(pendingFixtures(base.fixtures), {
+      fresh: forceFresh,
+    })
+    const scraped = matchToFixtures(base.fixtures, matches)
+    for (const report of reports) {
+      if (!report.ok) errors.push(`${report.name}: ${report.error ?? 'failed'}`)
+    }
+
+    const manual = parseResults(localResults)
+    let results: ResultMap = { ...scraped, ...manual }
+    let origin: ScoresInfo['origin'] =
+      Object.keys(scraped).length > 0
+        ? 'remote'
+        : Object.keys(manual).length > 0
+          ? 'local'
+          : 'dataset'
 
     if (scoresUrl) {
       try {
         results = { ...results, ...(await loadRemoteResults(scoresUrl)) }
         origin = 'remote'
       } catch (error) {
-        scoresError = error instanceof Error ? error.message : 'Could not reach the scores source'
+        errors.push(error instanceof Error ? error.message : 'Could not reach the scores source')
       }
     }
 
+    const scoresError = errors.length > 0 ? errors.join(' · ') : undefined
     const { fixtures, applied } = normalize(base, results)
     const payload: FixturesPayload = {
       meta: base.meta,

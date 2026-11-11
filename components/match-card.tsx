@@ -228,7 +228,7 @@ export function MatchCard({ fixture: f, onSelect, variant, day, isToday }: Match
         </span>
       )}
       <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 px-3 py-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: comp.color === '#20C96B' ? '#12834A' : comp.color === '#F29A43' ? '#B5621A' : comp.color }}>
+        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: comp.color === '#F58220' ? '#B5621A' : comp.color === '#2AA8B5' ? '#13727D' : comp.color }}>
           {comp.name} · {f.round}
         </span>
         <span className="truncate font-display text-base font-bold uppercase text-foreground sm:text-lg">
