@@ -1,5 +1,5 @@
 const TEAM_LOGOS: Record<string, string> = {
-  'Persib Bandung': '/logos/persib.svg',
+  'Persib Bandung': '/logos/persib.png',
   'Arema FC': '/logos/sm/aremaFc.png',
   'Bali United': '/logos/sm/baliUtd.png',
   'Bhayangkara Presisi': '/logos/sm/Bhayangkara.png',
