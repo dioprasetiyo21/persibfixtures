@@ -23,6 +23,9 @@ const TEAM_LOGOS: Record<string, string> = {
   "Johor Darul Ta'zim": '/logos/sm/acc-jdt.png',
   'PKR Svay Rieng': '/logos/sm/acc-svay.png',
   'Công An Hà Nội': '/logos/sm/acc-cahn.png',
+  'FC Seoul': '/logos/sm/acl2-seoul.png',
+  'The Cong-Viettel': '/logos/sm/acl2-thecong.png',
+  'Melbourne Victory': '/logos/sm/acl2-melbourn.png',
 }
 
 export function teamLogo(name: string): string | null {
