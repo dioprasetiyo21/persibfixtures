@@ -6,7 +6,8 @@ import { needsScorePolling } from '@/lib/fixtures'
 import type { FixturesPayload } from '@/lib/types'
 
 const ENDPOINT = '/api/fixtures'
-const POLL_INTERVAL_MS = 60_000
+const ACTIVE_POLL_INTERVAL_MS = 60_000
+const BACKGROUND_POLL_INTERVAL_MS = 5 * 60_000
 
 const fetcher = async (url: string): Promise<FixturesPayload> => {
   const res = await fetch(url, { cache: 'no-store' })
@@ -17,9 +18,12 @@ const fetcher = async (url: string): Promise<FixturesPayload> => {
 
 export function useFixtures() {
   const swr = useSWR<FixturesPayload>(ENDPOINT, fetcher, {
-    revalidateOnFocus: false,
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true,
     refreshInterval: (latest) =>
-      latest && needsScorePolling(latest.fixtures) ? POLL_INTERVAL_MS : 0,
+      latest && needsScorePolling(latest.fixtures)
+        ? ACTIVE_POLL_INTERVAL_MS
+        : BACKGROUND_POLL_INTERVAL_MS,
   })
   const { mutate } = swr
   const [isRefreshing, setIsRefreshing] = useState(false)

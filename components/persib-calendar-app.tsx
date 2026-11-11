@@ -108,7 +108,14 @@ export function PersibCalendarApp() {
 
   return (
     <>
-      <SiteHeader meta={data?.meta} next={next} onSelect={setSelected} />
+      <SiteHeader
+        meta={data?.meta}
+        next={next}
+        onSelect={setSelected}
+        lastCheckedAt={data?.refreshedAt ?? data?.meta.lastUpdated}
+        isRefreshing={isRefreshing}
+        onRefresh={handleRefresh}
+      />
 
       <main className="mx-auto flex max-w-[1600px] flex-col gap-6 px-4 py-6 md:px-6">
         {error ? (

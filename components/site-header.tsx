@@ -1,5 +1,7 @@
 import Image from 'next/image'
-import { Clock, MapPin } from 'lucide-react'
+import { Clock, MapPin, RefreshCw } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { COMPETITION_MAP } from '@/lib/competitions'
 import { formatLongDate, shortTeam, venueLabel } from '@/lib/fixtures'
 import type { Fixture, SeasonMeta } from '@/lib/types'
@@ -8,13 +10,19 @@ export function SiteHeader({
   meta,
   next,
   onSelect,
+  lastCheckedAt,
+  isRefreshing,
+  onRefresh,
 }: {
   meta?: SeasonMeta
   next: Fixture | null
   onSelect: (f: Fixture) => void
+  lastCheckedAt?: string
+  isRefreshing: boolean
+  onRefresh: () => void
 }) {
-  const updated = meta
-    ? new Date(meta.lastUpdated).toLocaleString('en-GB', {
+  const updated = lastCheckedAt
+    ? new Date(lastCheckedAt).toLocaleString('en-GB', {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
@@ -54,10 +62,27 @@ export function SiteHeader({
             <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/75 sm:text-sm">
               2026/2027 Season · All Competitions
             </p>
-            <p className="mt-2 flex items-center gap-1.5 text-xs text-white/60">
-              <Clock className="size-3" aria-hidden />
-              Last updated {updated} WIB
-            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-white/70">
+              <p className="flex items-center gap-1.5" aria-live="polite">
+                <Clock className="size-3" aria-hidden />
+                Last checked {updated} WIB
+              </p>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onRefresh}
+                disabled={isRefreshing}
+                className="h-7 gap-1.5 rounded-full px-2 text-xs text-white hover:bg-white/10 hover:text-white"
+                aria-label={isRefreshing ? 'Refreshing match results' : 'Refresh match results now'}
+              >
+                <RefreshCw
+                  aria-hidden
+                  className={cn('size-3', isRefreshing && 'animate-spin')}
+                />
+                {isRefreshing ? 'Refreshing…' : 'Refresh now'}
+              </Button>
+            </div>
           </div>
         </div>
 
