@@ -100,18 +100,18 @@ export function MatchCard({ fixture: f, onSelect, variant, day, isToday }: Match
           </span>
         </span>
         <span className="mt-auto flex flex-col items-center text-center">
-          <span className={cn('flex items-center justify-center', large ? 'gap-2' : 'flex-col gap-px')}>
+          <span className={cn('flex items-center justify-center', large ? 'gap-0.5 sm:gap-2' : 'flex-col gap-px')}>
             {hasLogo && (
               <TeamLogo
                 name={f.opponent}
-                className={large ? 'hidden size-9 sm:block' : 'size-[22px]'}
+                className={large ? 'size-4 sm:size-9' : 'size-[22px]'}
               />
             )}
             <span className="flex flex-col items-center">
               <span
                 className={cn(
                   'font-display font-bold tabular-nums leading-none',
-                  large ? 'text-sm sm:text-xl' : 'text-[13px]',
+                  large ? 'text-[10px] sm:text-xl' : 'text-[13px]',
                 )}
               >
                 {f.status === 'finished' && score ? score : timeLabel(f)}
