@@ -16,9 +16,9 @@ export function MatchList({ fixtures, onSelect }: { fixtures: Fixture[]; onSelec
             {key === 'TBA' ? 'Date TBA' : monthLabel(key)}
             <span className="h-px flex-1 bg-border" />
           </h3>
-          <ul className="grid gap-2 lg:grid-cols-2">
+          <ul className="grid min-w-0 grid-cols-1 gap-2 lg:grid-cols-2">
             {list.map((f) => (
-              <li key={f.id}>
+              <li key={f.id} className="min-w-0">
                 <MatchCard fixture={f} onSelect={onSelect} variant="row" />
               </li>
             ))}

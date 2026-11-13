@@ -72,7 +72,7 @@ export function MatchCard({ fixture: f, onSelect, variant, day, isToday }: Match
         style={style}
         className={cn(
           'group relative flex h-full w-full flex-col overflow-hidden text-left transition-[filter,transform] hover:brightness-110 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white',
-          large ? 'gap-1 p-2' : 'gap-px px-1 py-0.5',
+          large ? 'gap-1 p-1 sm:p-2' : 'gap-px px-1 py-0.5',
           muted && 'opacity-60 line-through',
           dashed && 'bg-[repeating-linear-gradient(135deg,transparent_0_6px,rgba(255,255,255,0.14)_6px_12px)]',
           isToday && 'ring-2 ring-inset ring-yellow-300',
@@ -100,13 +100,18 @@ export function MatchCard({ fixture: f, onSelect, variant, day, isToday }: Match
           </span>
         </span>
         <span className="mt-auto flex flex-col items-center text-center">
-          <span className={cn('flex items-center justify-center', large ? 'gap-2' : 'flex-col gap-px')}>
-            {hasLogo && <TeamLogo name={f.opponent} className={large ? 'size-9' : 'size-[22px]'} />}
+          <span className={cn('flex items-center justify-center', large ? 'gap-0.5 sm:gap-2' : 'flex-col gap-px')}>
+            {hasLogo && (
+              <TeamLogo
+                name={f.opponent}
+                className={large ? 'size-4 sm:size-9' : 'size-[22px]'}
+              />
+            )}
             <span className="flex flex-col items-center">
               <span
                 className={cn(
                   'font-display font-bold tabular-nums leading-none',
-                  large ? 'text-xl' : 'text-[13px]',
+                  large ? 'text-[10px] sm:text-xl' : 'text-[13px]',
                 )}
               >
                 {f.status === 'finished' && score ? score : timeLabel(f)}
@@ -119,7 +124,7 @@ export function MatchCard({ fixture: f, onSelect, variant, day, isToday }: Match
               <span
                 className={cn(
                   'font-bold uppercase tracking-wider opacity-80',
-                  large ? 'mt-0.5 text-[10px]' : 'text-[7px] leading-[10px]',
+                  large ? 'text-[8px] sm:mt-0.5 sm:text-[10px]' : 'text-[7px] leading-[10px]',
                 )}
               >
                 {statusLine(f, large)}
@@ -130,7 +135,7 @@ export function MatchCard({ fixture: f, onSelect, variant, day, isToday }: Match
             <span
               className={cn(
                 'w-full truncate font-semibold uppercase leading-tight',
-                large ? 'mt-1 text-sm' : 'text-[8.5px]',
+                large ? 'text-[7px] sm:mt-1 sm:text-sm' : 'text-[8.5px]',
               )}
             >
               {large ? (
@@ -227,10 +232,10 @@ export function MatchCard({ fixture: f, onSelect, variant, day, isToday }: Match
       type="button"
       onClick={() => onSelect(f)}
       aria-label={ariaLabel(f)}
-      className="flex w-full items-stretch overflow-hidden rounded-md border border-border bg-card text-left transition hover:border-navy-2/40 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-ring"
+      className="flex min-w-0 w-full items-stretch overflow-hidden rounded-md border border-border bg-card text-left transition hover:border-navy-2/40 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-ring"
     >
       <span className="w-1.5 shrink-0" style={{ backgroundColor: comp.color }} />
-      <span className="flex w-20 shrink-0 flex-col justify-center border-r border-border px-3 py-2 sm:w-24">
+      <span className="flex w-16 shrink-0 flex-col justify-center border-r border-border px-2 py-2 sm:w-24 sm:px-3">
         <span className="text-[11px] font-semibold uppercase text-muted-foreground">
           {formatShortDate(f.date).split(' ')[0]}
         </span>
@@ -239,12 +244,12 @@ export function MatchCard({ fixture: f, onSelect, variant, day, isToday }: Match
         </span>
       </span>
       {hasLogo && (
-        <span className="flex shrink-0 items-center pl-3">
-          <TeamLogo name={f.opponent} className="size-9" />
+        <span className="flex shrink-0 items-center pl-2 sm:pl-3">
+          <TeamLogo name={f.opponent} className="size-8 sm:size-9" />
         </span>
       )}
-      <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 px-3 py-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: comp.color === '#F58220' ? '#B5621A' : comp.color === '#2AA8B5' ? '#13727D' : comp.color }}>
+      <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 px-2 py-2 sm:px-3">
+        <span className="break-words text-[10px] font-semibold uppercase tracking-wider sm:text-[11px]" style={{ color: comp.color === '#F58220' ? '#B5621A' : comp.color === '#2AA8B5' ? '#13727D' : comp.color }}>
           {comp.name} · {f.round}
         </span>
         <span className="truncate font-display text-base font-bold uppercase text-foreground sm:text-lg">
@@ -257,7 +262,7 @@ export function MatchCard({ fixture: f, onSelect, variant, day, isToday }: Match
           <span className="truncate">{venueLabel(f)}</span>
         </span>
       </span>
-      <span className="flex shrink-0 flex-col items-end justify-center gap-1 px-3 py-2">
+      <span className="flex shrink-0 flex-col items-end justify-center gap-1 px-2 py-2 sm:px-3">
         {f.status === 'finished' && outcome ? (
           <span
             className={cn(
