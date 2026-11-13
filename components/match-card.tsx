@@ -14,7 +14,7 @@ import {
 import { teamLogo } from '@/lib/team-logos'
 import type { Fixture } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { MapPin } from 'lucide-react'
+import { House, MapPin, Plane } from 'lucide-react'
 
 interface MatchCardProps {
   fixture: Fixture
@@ -45,16 +45,18 @@ function statusLine(f: Fixture, large = false) {
 function ariaLabel(f: Fixture) {
   const comp = COMPETITION_MAP[f.competition]
   const score = scoreline(f)
-  return `${comp.name}, ${f.round}: Persib ${score ? score : 'versus'} ${f.opponent}, ${
-    f.venueType
-  }, ${formatShortDate(f.date)}, ${f.kickoff ? `${f.kickoff} WIB` : 'kickoff to be announced'}, ${
-    STATUS_LABEL[f.status]
-  }`
+  const matchup =
+    f.venueType === 'away'
+      ? `${f.opponent} ${score ?? 'versus'} Persib`
+      : `Persib ${score ?? 'versus'} ${f.opponent}`
+  return `${comp.name}, ${f.round}: ${matchup}, ${f.venueType}, ${formatShortDate(f.date)}, ${
+    f.kickoff ? `${f.kickoff} WIB` : 'kickoff to be announced'
+  }, ${STATUS_LABEL[f.status]}`
 }
 
 export function MatchCard({ fixture: f, onSelect, variant, day, isToday }: MatchCardProps) {
   const comp = COMPETITION_MAP[f.competition]
-  const score = f.score ? `${f.score.persib}–${f.score.opponent}` : null
+  const score = scoreline(f)
   const muted = f.status === 'cancelled' || f.status === 'postponed'
   const style = { backgroundColor: comp.color, color: comp.text }
   const dashed = f.status === 'tentative' || f.status === 'tba'
@@ -82,11 +84,19 @@ export function MatchCard({ fixture: f, onSelect, variant, day, isToday }: Match
           </span>
           <span
             className={cn(
-              'rounded-[2px] bg-black/15 font-bold tracking-wider',
-              large ? 'px-1 text-[10px]' : 'px-0.5 text-[7px] leading-[10px]',
+              'flex items-center justify-center rounded-[2px] bg-black/15 font-bold tracking-wider',
+              large ? 'size-5' : 'size-3.5',
+              large ? 'text-[9px]' : 'text-[7px]',
             )}
+            title={f.venueType === 'away' ? 'Away match' : f.venueType === 'home' ? 'Home match' : f.venueType === 'neutral' ? 'Neutral venue' : 'Venue to be confirmed'}
           >
-            {comp.short}
+            {f.venueType === 'away' ? (
+              <Plane aria-hidden className={large ? 'size-3.5' : 'size-2.5'} />
+            ) : f.venueType === 'home' ? (
+              <House aria-hidden className={large ? 'size-3.5' : 'size-2.5'} />
+            ) : (
+              f.venueType === 'neutral' ? 'N' : '?'
+            )}
           </span>
         </span>
         <span className="mt-auto flex flex-col items-center text-center">
@@ -124,9 +134,15 @@ export function MatchCard({ fixture: f, onSelect, variant, day, isToday }: Match
               )}
             >
               {large ? (
-                <>
-                  PERSIB {f.status === 'finished' && score ? score : 'vs'} {shortTeam(f.opponent)}
-                </>
+                f.venueType === 'away' ? (
+                  <>
+                    {shortTeam(f.opponent)} {f.status === 'finished' && score ? score : 'vs'} PERSIB
+                  </>
+                ) : (
+                  <>
+                    PERSIB {f.status === 'finished' && score ? score : 'vs'} {shortTeam(f.opponent)}
+                  </>
+                )
               ) : (
                 <>
                   {f.venueType === 'away' ? '@ ' : f.venueType === 'tba' ? '' : 'vs '}
