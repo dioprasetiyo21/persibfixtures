@@ -69,6 +69,12 @@ export const ACC_MATCHES_URL = str(
   process.env.ACC_MATCHES_URL,
   'https://aseanutdfc.com/id/asean-club-championship/matches',
 )
+/**
+ * Timezone the ACC page expresses kickoff times in when a card does not declare
+ * one itself. The live page currently labels every card explicitly, so this is a
+ * documented fallback rather than a fixed-offset assumption.
+ */
+export const ACC_SOURCE_TZ = str(process.env.ACC_SOURCE_TZ, 'America/New_York')
 export const AFC_FIXTURES_URL = str(
   process.env.AFC_FIXTURES_URL,
   'https://www.the-afc.com/api/live/fixtures',
