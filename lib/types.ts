@@ -32,6 +32,8 @@ export interface RawFixture {
   notes?: string
   sourceKey: string
   verifiedAt: string
+  /** Stable identifier from the official source (match URL slug or match id). */
+  sourceMatchId?: string | null
 }
 
 export interface Fixture extends Omit<RawFixture, 'sourceKey'> {
@@ -66,6 +68,10 @@ export interface FixturesPayload {
   fixtures: Fixture[]
   refreshedAt?: string
   scores?: ScoresInfo
+  /** Which copy of data/fixtures.json served this payload. */
+  datasetSource?: 'github' | 'raw' | 'local' | 'bundled' | 'remote'
+  /** Populated when GitHub was unreachable and the bundled copy was used. */
+  datasetError?: string
 }
 
 export type ViewMode = 'season' | 'month' | 'upcoming' | 'completed'

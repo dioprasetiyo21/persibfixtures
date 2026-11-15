@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import { Clock, MapPin, RefreshCw } from 'lucide-react'
+import { CalendarClock, Clock, MapPin, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { COMPETITION_MAP } from '@/lib/competitions'
@@ -11,15 +11,17 @@ export function SiteHeader({
   next,
   onSelect,
   lastCheckedAt,
-  isRefreshing,
-  onRefresh,
+  busyKind,
+  onRefreshSchedule,
+  onRefreshScores,
 }: {
   meta?: SeasonMeta
   next: Fixture | null
   onSelect: (f: Fixture) => void
   lastCheckedAt?: string
-  isRefreshing: boolean
-  onRefresh: () => void
+  busyKind: 'schedule' | 'scores' | null
+  onRefreshSchedule: () => void
+  onRefreshScores: () => void
 }) {
   const updated = lastCheckedAt
     ? new Date(lastCheckedAt).toLocaleString('en-GB', {
@@ -71,16 +73,25 @@ export function SiteHeader({
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={onRefresh}
-                disabled={isRefreshing}
+                onClick={onRefreshSchedule}
+                disabled={!!busyKind}
                 className="h-7 gap-1.5 rounded-full px-2 text-xs text-white hover:bg-white/10 hover:text-white"
-                aria-label={isRefreshing ? 'Refreshing match results' : 'Refresh match results now'}
+                aria-label="Refresh schedule from official sources"
               >
-                <RefreshCw
-                  aria-hidden
-                  className={cn('size-3', isRefreshing && 'animate-spin')}
-                />
-                {isRefreshing ? 'Refreshing…' : 'Refresh now'}
+                <CalendarClock aria-hidden className={cn('size-3', busyKind === 'schedule' && 'animate-pulse')} />
+                {busyKind === 'schedule' ? 'Checking schedule…' : 'Refresh Schedule'}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onRefreshScores}
+                disabled={!!busyKind}
+                className="h-7 gap-1.5 rounded-full px-2 text-xs text-white hover:bg-white/10 hover:text-white"
+                aria-label="Refresh scores from official sources"
+              >
+                <RefreshCw aria-hidden className={cn('size-3', busyKind === 'scores' && 'animate-spin')} />
+                {busyKind === 'scores' ? 'Checking scores…' : 'Refresh Scores'}
               </Button>
             </div>
           </div>

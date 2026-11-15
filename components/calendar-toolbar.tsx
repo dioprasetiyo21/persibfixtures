@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  CalendarClock,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
@@ -44,8 +45,9 @@ interface CalendarToolbarProps {
   onPrint: () => void
   onCSV: () => void
   onICS: () => void
-  onRefresh: () => void
-  isRefreshing: boolean
+  onRefreshSchedule: () => void
+  onRefreshScores: () => void
+  busyKind: 'schedule' | 'scores' | null
   pendingCount: number
 }
 
@@ -134,11 +136,30 @@ export function CalendarToolbar(p: CalendarToolbarProps) {
             </button>
           )}
         </div>
-        <Button variant="outline" size="sm" onClick={p.onRefresh} disabled={p.isRefreshing} className="bg-white">
-          <RefreshCw aria-hidden className={cn(p.isRefreshing && 'animate-spin')} />
-          <span className="hidden sm:inline">{p.isRefreshing ? 'Refreshing…' : 'Refresh scores'}</span>
-          <span className="sr-only sm:hidden">Refresh scores</span>
-          {p.pendingCount > 0 && !p.isRefreshing && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={p.onRefreshSchedule}
+          disabled={!!p.busyKind}
+          className="bg-white"
+          aria-label="Refresh schedule from official sources"
+        >
+          <CalendarClock aria-hidden className={cn(p.busyKind === 'schedule' && 'animate-pulse')} />
+          <span className="hidden sm:inline">{p.busyKind === 'schedule' ? 'Checking…' : 'Refresh Schedule'}</span>
+          <span className="sr-only sm:hidden">Refresh Schedule</span>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={p.onRefreshScores}
+          disabled={!!p.busyKind}
+          className="bg-white"
+          aria-label="Refresh scores from official sources"
+        >
+          <RefreshCw aria-hidden className={cn(p.busyKind === 'scores' && 'animate-spin')} />
+          <span className="hidden sm:inline">{p.busyKind === 'scores' ? 'Checking…' : 'Refresh Scores'}</span>
+          <span className="sr-only sm:hidden">Refresh Scores</span>
+          {p.pendingCount > 0 && !p.busyKind && (
             <span
               className="flex min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold leading-4 text-white"
               title={`${p.pendingCount} finished ${p.pendingCount === 1 ? 'match' : 'matches'} without a score`}

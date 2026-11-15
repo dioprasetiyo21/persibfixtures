@@ -10,8 +10,10 @@ import { DashboardStats } from '@/components/dashboard-stats'
 import { MatchDetailsModal } from '@/components/match-details-modal'
 import { MatchList } from '@/components/match-list'
 import { SiteHeader } from '@/components/site-header'
+import { SyncDialog } from '@/components/sync-dialog'
 import { UpcomingStrip } from '@/components/upcoming-strip'
 import { useFixtures } from '@/hooks/use-fixtures'
+import { useSync } from '@/hooks/use-sync'
 import { exportCSV, exportICS } from '@/lib/export'
 import {
   isAwaitingResult,
@@ -26,13 +28,17 @@ import {
 import type { CompetitionId, Fixture, ViewMode } from '@/lib/types'
 
 export function PersibCalendarApp() {
-  const { data, error, isLoading, mutate, refreshScores, isRefreshing, refreshError } = useFixtures()
+  const { data, error, isLoading, mutate } = useFixtures()
+  const sync = useSync({
+    onCommitted: async () => {
+      await mutate()
+    },
+  })
   const [competition, setCompetition] = useState<CompetitionId | 'ALL'>('ALL')
   const [view, setView] = useState<ViewMode>('season')
   const [query, setQuery] = useState('')
   const [focusOverride, setFocusOverride] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [refreshNote, setRefreshNote] = useState<{ at: string; gained: number; sourceError?: string } | null>(null)
 
   const todayKey = todayKeyWIB()
   const months = useMemo(
@@ -73,14 +79,11 @@ export function PersibCalendarApp() {
   )
 
   async function handleRefresh() {
-    const before = completed.length
-    const next = await refreshScores()
-    if (!next) return
-    setRefreshNote({
-      at: next.refreshedAt ?? new Date().toISOString(),
-      gained: next.fixtures.filter(isCompleted).length - before,
-      sourceError: next.scores?.error,
-    })
+    await sync.start('scores')
+  }
+
+  function startSync(kind: 'schedule' | 'scores') {
+    void sync.start(kind)
   }
 
   function scrollToMonth(m: string) {
@@ -113,8 +116,9 @@ export function PersibCalendarApp() {
         next={next}
         onSelect={setSelected}
         lastCheckedAt={data?.refreshedAt ?? data?.meta.lastUpdated}
-        isRefreshing={isRefreshing}
-        onRefresh={handleRefresh}
+        busyKind={sync.busyKind}
+        onRefreshSchedule={() => startSync('schedule')}
+        onRefreshScores={() => startSync('scores')}
       />
 
       <main className="mx-auto flex max-w-[1600px] flex-col gap-6 px-4 py-6 md:px-6">
@@ -155,8 +159,9 @@ export function PersibCalendarApp() {
                   onPrint={() => window.print()}
                   onCSV={() => exportCSV(filtered)}
                   onICS={() => exportICS(filtered)}
-                  onRefresh={handleRefresh}
-                  isRefreshing={isRefreshing}
+                  onRefreshSchedule={() => startSync('schedule')}
+                  onRefreshScores={() => startSync('scores')}
+                  busyKind={sync.busyKind}
                   pendingCount={pendingCount}
                 />
                 <CompetitionFilter value={competition} onChange={setCompetition} counts={counts} />
@@ -168,30 +173,64 @@ export function PersibCalendarApp() {
                 {hasFilters && ` Showing ${filtered.length} of ${all.length} matches.`}
               </p>
               <p role="status" aria-live="polite" className="-mt-1 text-xs text-muted-foreground">
-                {refreshError ? (
-                  <span className="font-semibold text-red-700">Could not refresh scores: {refreshError}</span>
-                ) : refreshNote ? (
-                  <>
-                    Scores checked at{' '}
-                    {new Date(refreshNote.at).toLocaleTimeString('en-GB', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      timeZone: 'Asia/Jakarta',
-                    })}{' '}
-                    WIB ·{' '}
-                    <span className="font-semibold">
-                      {refreshNote.gained > 0
-                        ? `${refreshNote.gained} new ${refreshNote.gained === 1 ? 'result' : 'results'}`
-                        : 'no new results yet'}
-                    </span>
-                    {refreshNote.sourceError && (
-                      <span className="font-semibold text-amber-700"> · scores source unavailable ({refreshNote.sourceError})</span>
+                {sync.message ? (
+                  <span
+                    className={
+                      sync.phase === 'error'
+                        ? 'font-semibold text-red-700'
+                        : sync.phase === 'success'
+                          ? 'font-semibold text-emerald-700'
+                          : 'font-semibold text-navy'
+                    }
+                  >
+                    {sync.message}
+                    {sync.detail && <span className="font-normal text-red-700"> · {sync.detail}</span>}
+                    {sync.result?.commit && (
+                      <>
+                        {' '}
+                        <a
+                          href={sync.result.commit.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="underline underline-offset-2"
+                        >
+                          View commit {sync.result.commit.sha.slice(0, 7)}
+                        </a>
+                      </>
                     )}
-                  </>
+                    {sync.phase === 'error' && (
+                      <button
+                        type="button"
+                        onClick={sync.retry}
+                        className="ml-2 underline underline-offset-2"
+                        disabled={sync.isBusy}
+                      >
+                        Try again
+                      </button>
+                    )}
+                    {sync.phase === 'success' && (
+                      <button
+                        type="button"
+                        onClick={sync.dismiss}
+                        className="ml-2 font-normal underline underline-offset-2"
+                      >
+                        Dismiss
+                      </button>
+                    )}
+                  </span>
                 ) : pendingCount > 0 ? (
-                  `${pendingCount} finished ${pendingCount === 1 ? 'match has' : 'matches have'} no score yet. Use Refresh scores to check for results.`
+                  `${pendingCount} finished ${pendingCount === 1 ? 'match has' : 'matches have'} no score yet. Use Refresh Scores to check for results.`
                 ) : (
                   'Scores update automatically while a match is in progress.'
+                )}
+                {data?.scores?.error && (
+                  <span className="font-semibold text-amber-700"> · live score overlay unavailable: {data.scores.error}</span>
+                )}
+                {data?.datasetError && (
+                  <span className="font-semibold text-amber-700">
+                    {' '}
+                    · using bundled fixture data ({data.datasetError})
+                  </span>
                 )}
               </p>
 
@@ -237,9 +276,11 @@ export function PersibCalendarApp() {
       <MatchDetailsModal
         fixture={selected}
         onOpenChange={(o) => !o && setSelected(null)}
-        onRefresh={handleRefresh}
-        isRefreshing={isRefreshing}
+        onRefreshScores={handleRefresh}
+        isRefreshing={sync.busyKind === 'scores'}
       />
+
+      <SyncDialog sync={sync} />
     </>
   )
 }

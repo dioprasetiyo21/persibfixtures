@@ -1,5 +1,7 @@
-import dataset from '@/data/fixtures.json'
+import bundled from '@/data/fixtures.json'
 import localResults from '@/data/results.json'
+import { validateDataset } from '@/lib/sync/dataset'
+import { readDataset } from '@/lib/sync/github'
 import { fetchSourceMatches, matchToFixtures, pendingFixtures } from '@/lib/score-sources'
 import type {
   Fixture,
@@ -12,6 +14,7 @@ import type {
 } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 interface Dataset {
   meta: SeasonMeta
@@ -63,10 +66,55 @@ async function loadRemoteResults(url: string): Promise<ResultMap> {
   return parseResults(await res.json())
 }
 
+/**
+ * Fixtures are read at runtime from GitHub (data/fixtures.json on the
+ * production branch) so a commit from the sync flow is visible after
+ * revalidation. The bundled copy is only a fallback so the site keeps working
+ * if GitHub is briefly unreachable.
+ */
+async function loadBase(fresh: boolean): Promise<{
+  dataset: Dataset
+  source: NonNullable<FixturesPayload['datasetSource']>
+  error?: string
+}> {
+  const fixturesUrl = process.env.FIXTURES_SOURCE_URL
+  if (fixturesUrl) {
+    try {
+      const res = await fetch(
+        fixturesUrl,
+        fresh ? { cache: 'no-store' } : { next: { revalidate: 3600, tags: ['fixtures'] } },
+      )
+      if (!res.ok) throw new Error(`Remote source responded ${res.status}`)
+      return { dataset: validateDataset(await res.json()), source: 'remote' }
+    } catch (error) {
+      return {
+        dataset: validateDataset(bundled),
+        source: 'bundled',
+        error: error instanceof Error ? error.message : 'Remote fixture source failed',
+      }
+    }
+  }
+
+  try {
+    const result = await readDataset({ fresh })
+    return { dataset: result.dataset, source: result.source }
+  } catch (error) {
+    return {
+      dataset: validateDataset(bundled),
+      source: 'bundled',
+      error: error instanceof Error ? error.message : 'GitHub fixture source failed',
+    }
+  }
+}
+
 function normalize(data: Dataset, results: ResultMap): { fixtures: Fixture[]; applied: number } {
   let applied = 0
-  const fixtures: Fixture[] = data.fixtures.map(({ sourceKey, ...f }) => {
-    const fixture: Fixture = { ...f, source: data.sources[sourceKey] ?? { name: sourceKey, url: '' } }
+  const fixtures: Fixture[] = data.fixtures.map(({ sourceKey, sourceMatchId, ...f }) => {
+    const fixture: Fixture = {
+      ...f,
+      ...(sourceMatchId ? { sourceMatchId } : {}),
+      source: data.sources[sourceKey] ?? { name: sourceKey, url: '' },
+    }
     const result = results[f.id]
     const open = f.status !== 'cancelled' && f.status !== 'postponed'
     if (result && open && (!f.score || f.score.persib !== result.persib || f.score.opponent !== result.opponent)) {
@@ -80,32 +128,23 @@ function normalize(data: Dataset, results: ResultMap): { fixtures: Fixture[]; ap
 }
 
 /**
- * Fixtures come from data/fixtures.json (or FIXTURES_SOURCE_URL, same shape).
+ * Fixtures come from GitHub data/fixtures.json (or FIXTURES_SOURCE_URL, same shape).
  * Final scores are layered on top from data/results.json and, when set,
- * SCORES_SOURCE_URL. Pass ?refresh=1 to bypass the cached fixtures source.
+ * SCORES_SOURCE_URL. Pass ?refresh=1 to bypass cached sources.
  */
 export async function GET(request: Request) {
   const forceFresh = new URL(request.url).searchParams.has('refresh')
-  const fixturesUrl = process.env.FIXTURES_SOURCE_URL
   const scoresUrl = process.env.SCORES_SOURCE_URL
 
   try {
-    let base = dataset as Dataset
-    if (fixturesUrl) {
-      const res = await fetch(
-        fixturesUrl,
-        forceFresh ? { cache: 'no-store' } : { next: { revalidate: 3600 } },
-      )
-      if (!res.ok) throw new Error(`Remote source responded ${res.status}`)
-      base = (await res.json()) as Dataset
-    }
-
+    const base = await loadBase(forceFresh)
     const errors: string[] = []
+    if (base.error) errors.push(`${base.source} fixture source unavailable (${base.error})`)
 
-    const { matches, reports } = await fetchSourceMatches(pendingFixtures(base.fixtures), {
+    const { matches, reports } = await fetchSourceMatches(pendingFixtures(base.dataset.fixtures), {
       fresh: forceFresh,
     })
-    const scraped = matchToFixtures(base.fixtures, matches)
+    const scraped = matchToFixtures(base.dataset.fixtures, matches)
     for (const report of reports) {
       if (!report.ok) errors.push(`${report.name}: ${report.error ?? 'failed'}`)
     }
@@ -129,11 +168,13 @@ export async function GET(request: Request) {
     }
 
     const scoresError = errors.length > 0 ? errors.join(' · ') : undefined
-    const { fixtures, applied } = normalize(base, results)
+    const { fixtures, applied } = normalize(base.dataset, results)
     const payload: FixturesPayload = {
-      meta: base.meta,
+      meta: base.dataset.meta,
       fixtures,
       refreshedAt: new Date().toISOString(),
+      datasetSource: base.source,
+      ...(base.error ? { datasetError: base.error } : {}),
       scores: { origin, applied, ...(scoresError ? { error: scoresError } : {}) },
     }
     return Response.json(payload, { headers: { 'Cache-Control': 'no-store' } })

@@ -22,12 +22,12 @@ import { cn } from '@/lib/utils'
 export function MatchDetailsModal({
   fixture,
   onOpenChange,
-  onRefresh,
+  onRefreshScores,
   isRefreshing,
 }: {
   fixture: Fixture | null
   onOpenChange: (open: boolean) => void
-  onRefresh: () => void
+  onRefreshScores: () => void
   isRefreshing: boolean
 }) {
   const [copied, setCopied] = useState(false)
@@ -140,7 +140,7 @@ export function MatchDetailsModal({
                   </Button>
                 )}
                 {pending && (
-                  <Button variant="outline" size="sm" onClick={onRefresh} disabled={isRefreshing}>
+                  <Button variant="outline" size="sm" onClick={onRefreshScores} disabled={isRefreshing}>
                     <RefreshCw aria-hidden className={cn(isRefreshing && 'animate-spin')} />
                     {isRefreshing ? 'Checking…' : 'Refresh score'}
                   </Button>
