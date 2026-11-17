@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
-import { CalendarPlus, Check, ExternalLink, RefreshCw, Share2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { BarChart3, CalendarPlus, Check, ExternalLink, RefreshCw, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
+import { MatchStatisticsModal } from '@/components/match-statistics-modal'
 import { TeamCrest } from '@/components/team-crest'
 import { COMPETITION_MAP } from '@/lib/competitions'
+import { supportsStatistics } from '@/lib/statistics/registry'
 import {
   formatLongDate,
   homeAway,
@@ -31,7 +33,17 @@ export function MatchDetailsModal({
   isRefreshing: boolean
 }) {
   const [copied, setCopied] = useState(false)
+  const [statsOpen, setStatsOpen] = useState(false)
   const f = fixture
+
+  useEffect(() => {
+    setStatsOpen(false)
+  }, [f?.id])
+
+  function handleOpenChange(next: boolean) {
+    if (!next) setStatsOpen(false)
+    onOpenChange(next)
+  }
 
   async function handleShare() {
     if (!f) return
@@ -50,8 +62,9 @@ export function MatchDetailsModal({
   }
 
   return (
-    <Dialog open={!!f} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92dvh] gap-0 overflow-y-auto p-0 sm:max-w-lg">
+    <>
+      <Dialog open={!!f} onOpenChange={handleOpenChange}>
+        <DialogContent className="max-h-[92dvh] gap-0 overflow-y-auto p-0 sm:max-w-lg">
         {f && (() => {
           const comp = COMPETITION_MAP[f.competition]
           const { home, away } = homeAway(f)
@@ -134,6 +147,17 @@ export function MatchDetailsModal({
               </dl>
 
               <div className="flex flex-wrap gap-2 border-t border-border bg-muted/50 px-5 py-3">
+                {f.status === 'finished' && supportsStatistics(f.competition) && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="mb-1 w-full"
+                    onClick={() => setStatsOpen(true)}
+                  >
+                    <BarChart3 aria-hidden />
+                    Lihat Statistik Pertandingan
+                  </Button>
+                )}
                 {f.date && (
                   <Button variant="outline" size="sm" onClick={() => exportICS([f], `persib-${f.id}.ics`)}>
                     <CalendarPlus aria-hidden /> Add to calendar
@@ -155,5 +179,7 @@ export function MatchDetailsModal({
         })()}
       </DialogContent>
     </Dialog>
+    <MatchStatisticsModal fixture={f} open={statsOpen} onOpenChange={setStatsOpen} />
+    </>
   )
 }
