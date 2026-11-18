@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { MatchStatisticsModal } from '@/components/match-statistics-modal'
 import { TeamCrest } from '@/components/team-crest'
+import { prefetchStatistics } from '@/hooks/use-match-statistics'
 import { COMPETITION_MAP } from '@/lib/competitions'
 import { supportsStatistics } from '@/lib/statistics/registry'
 import {
@@ -34,11 +35,30 @@ export function MatchDetailsModal({
 }) {
   const [copied, setCopied] = useState(false)
   const [statsOpen, setStatsOpen] = useState(false)
+  const [canHover, setCanHover] = useState(true)
   const f = fixture
+
+  // The statistics button and its prefetch share one eligibility check so the
+  // rules (finished match, supported competition) never drift apart.
+  const showStats = !!f && f.status === 'finished' && supportsStatistics(f.competition)
 
   useEffect(() => {
     setStatsOpen(false)
   }, [f?.id])
+
+  // Touch devices cannot hover, so warm the cache shortly after the details
+  // modal opens — but only for a match that actually exposes statistics.
+  useEffect(() => {
+    if (!f || !showStats || canHover || statsOpen) return
+    const id = f.id
+    const timer = setTimeout(() => prefetchStatistics(id), 450)
+    return () => clearTimeout(timer)
+  }, [f, showStats, canHover, statsOpen])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
+    setCanHover(window.matchMedia('(hover: hover) and (pointer: fine)').matches)
+  }, [])
 
   function handleOpenChange(next: boolean) {
     if (!next) setStatsOpen(false)
@@ -147,17 +167,6 @@ export function MatchDetailsModal({
               </dl>
 
               <div className="flex flex-wrap gap-2 border-t border-border bg-muted/50 px-5 py-3">
-                {f.status === 'finished' && supportsStatistics(f.competition) && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="mb-1 w-full"
-                    onClick={() => setStatsOpen(true)}
-                  >
-                    <BarChart3 aria-hidden />
-                    Lihat Statistik Pertandingan
-                  </Button>
-                )}
                 {f.date && (
                   <Button variant="outline" size="sm" onClick={() => exportICS([f], `persib-${f.id}.ics`)}>
                     <CalendarPlus aria-hidden /> Add to calendar
@@ -173,6 +182,18 @@ export function MatchDetailsModal({
                   {copied ? <Check aria-hidden /> : <Share2 aria-hidden />}
                   {copied ? 'Copied' : 'Share match'}
                 </Button>
+                {showStats && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setStatsOpen(true)}
+                    onPointerEnter={() => prefetchStatistics(f.id)}
+                    onFocus={() => prefetchStatistics(f.id)}
+                  >
+                    <BarChart3 aria-hidden />
+                    Lihat Statistik
+                  </Button>
+                )}
               </div>
             </>
           )

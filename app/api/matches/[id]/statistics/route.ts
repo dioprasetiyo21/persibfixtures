@@ -26,7 +26,7 @@ function toFixture(dataset: Dataset, id: string): Fixture | null {
  * then GitHub/raw, then the bundled copy — so statistics always see the latest
  * fixture reference metadata without touching the sync writeback path.
  */
-async function loadFixture(id: string): Promise<Fixture | null> {
+async function resolveFixture(id: string): Promise<Fixture | null> {
   const fixturesUrl = process.env.FIXTURES_SOURCE_URL
   if (fixturesUrl) {
     try {
@@ -50,6 +50,27 @@ async function loadFixture(id: string): Promise<Fixture | null> {
   }
 
   return toFixture(validateDataset(bundled), id)
+}
+
+/**
+ * Short-lived in-process memo so identical fixture metadata is not resolved over
+ * and over while a match is being viewed. This is per-instance only — it is not
+ * shared across serverless instances — and only positive results are cached.
+ */
+const FIXTURE_MEMO_TTL_MS = 60_000
+const FIXTURE_MEMO_MAX_ENTRIES = 200
+const FIXTURE_MEMO = new Map<string, { expires: number; fixture: Fixture }>()
+
+async function loadFixture(id: string): Promise<Fixture | null> {
+  const memo = FIXTURE_MEMO.get(id)
+  if (memo && memo.expires > Date.now()) return memo.fixture
+
+  const fixture = await resolveFixture(id)
+  if (!fixture) return null
+
+  if (FIXTURE_MEMO.size >= FIXTURE_MEMO_MAX_ENTRIES) FIXTURE_MEMO.clear()
+  FIXTURE_MEMO.set(id, { expires: Date.now() + FIXTURE_MEMO_TTL_MS, fixture })
+  return fixture
 }
 
 function cacheControl(state: string): string {
