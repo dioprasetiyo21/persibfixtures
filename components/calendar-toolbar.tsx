@@ -59,7 +59,7 @@ export function CalendarToolbar(p: CalendarToolbarProps) {
   return (
     <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
       <div className="flex flex-wrap items-center gap-2">
-        <div role="tablist" aria-label="Display" className="flex rounded-md border border-border bg-white p-0.5">
+        <div role="tablist" aria-label="Display" className="flex rounded-md border border-border bg-card p-0.5">
           {VIEWS.map((v) => (
             <button
               key={v.id}
@@ -88,7 +88,7 @@ export function CalendarToolbar(p: CalendarToolbarProps) {
             <ChevronLeft />
           </Button>
           <Select items={items} value={p.focusMonth} onValueChange={(v) => v && p.onMonthChange(v as string)}>
-            <SelectTrigger size="sm" className="w-40 bg-white font-semibold" aria-label="Jump to month">
+            <SelectTrigger size="sm" className="w-40 bg-card font-semibold" aria-label="Jump to month">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -123,7 +123,7 @@ export function CalendarToolbar(p: CalendarToolbarProps) {
             onChange={(e) => p.onQueryChange(e.target.value)}
             placeholder="Search opponent, venue, date…"
             aria-label="Search matches"
-            className="h-8 bg-white pl-8 pr-8"
+            className="h-8 bg-card pl-8 pr-8"
           />
           {p.query && (
             <button
@@ -141,7 +141,7 @@ export function CalendarToolbar(p: CalendarToolbarProps) {
           size="sm"
           onClick={p.onRefreshSchedule}
           disabled={!!p.busyKind}
-          className="bg-white"
+          className="bg-card"
           aria-label="Refresh schedule from official sources"
         >
           <CalendarClock aria-hidden className={cn(p.busyKind === 'schedule' && 'animate-pulse')} />
@@ -153,7 +153,7 @@ export function CalendarToolbar(p: CalendarToolbarProps) {
           size="sm"
           onClick={p.onRefreshScores}
           disabled={!!p.busyKind}
-          className="bg-white"
+          className="bg-card"
           aria-label="Refresh scores from official sources"
         >
           <RefreshCw aria-hidden className={cn(p.busyKind === 'scores' && 'animate-spin')} />

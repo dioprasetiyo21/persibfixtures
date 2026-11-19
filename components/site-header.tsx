@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import { CalendarClock, Clock, MapPin, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { cn } from '@/lib/utils'
 import { COMPETITION_MAP } from '@/lib/competitions'
 import { formatLongDate, shortTeam, venueLabel } from '@/lib/fixtures'
@@ -97,32 +98,37 @@ export function SiteHeader({
           </div>
         </div>
 
-        {next && comp && (
-          <button
-            type="button"
-            onClick={() => onSelect(next)}
-            className="no-print group flex w-full items-stretch overflow-hidden rounded-xl bg-white text-left text-foreground shadow-lg transition hover:-translate-y-0.5 lg:w-[440px]"
-          >
-            <span className="w-2 shrink-0" style={{ backgroundColor: comp.color }} />
-            <span className="flex flex-1 flex-col gap-1.5 p-4">
-              <span className="flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.18em]">
-                <span className="text-[#C8102E]">Next match</span>
-                <span className="text-muted-foreground">{comp.name}</span>
+        <div className="flex w-full flex-col gap-3 lg:w-auto lg:items-end">
+          <div className="flex items-center justify-end">
+            <ThemeToggle />
+          </div>
+          {next && comp && (
+            <button
+              type="button"
+              onClick={() => onSelect(next)}
+              className="no-print group flex w-full items-stretch overflow-hidden rounded-xl bg-card text-left text-card-foreground shadow-lg transition hover:-translate-y-0.5 lg:w-[440px]"
+            >
+              <span className="w-2 shrink-0" style={{ backgroundColor: comp.color }} />
+              <span className="flex flex-1 flex-col gap-1.5 p-4">
+                <span className="flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.18em]">
+                  <span className="text-[#C8102E] dark:text-[#FF8095]">Next match</span>
+                  <span className="text-muted-foreground">{comp.name}</span>
+                </span>
+                <span className="font-display text-2xl font-bold uppercase leading-tight text-brand">
+                  {next.venueType === 'away'
+                    ? `${shortTeam(next.opponent)} vs Persib`
+                    : `Persib vs ${shortTeam(next.opponent)}`}
+                </span>
+                <span className="text-sm font-medium text-foreground">
+                  {formatLongDate(next.date)} · {next.kickoff ? `${next.kickoff} WIB` : 'Kickoff TBA'}
+                </span>
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <MapPin className="size-3" aria-hidden /> {venueLabel(next)}
+                </span>
               </span>
-              <span className="font-display text-2xl font-bold uppercase leading-tight text-navy">
-                {next.venueType === 'away'
-                  ? `${shortTeam(next.opponent)} vs Persib`
-                  : `Persib vs ${shortTeam(next.opponent)}`}
-              </span>
-              <span className="text-sm font-medium text-foreground">
-                {formatLongDate(next.date)} · {next.kickoff ? `${next.kickoff} WIB` : 'Kickoff TBA'}
-              </span>
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <MapPin className="size-3" aria-hidden /> {venueLabel(next)}
-              </span>
-            </span>
-          </button>
-        )}
+            </button>
+          )}
+        </div>
       </div>
     </header>
   )

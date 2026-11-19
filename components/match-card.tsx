@@ -207,7 +207,7 @@ export function MatchCard({ fixture: f, onSelect, variant, day, isToday }: Match
             {hasLogo && <TeamLogo name={f.opponent} className="size-10" />}
           </span>
           <span className="mt-auto flex items-center justify-between text-xs">
-            <span className="font-display text-base font-bold tabular-nums text-navy">
+            <span className="font-display text-base font-bold tabular-nums text-brand">
               {f.status === 'finished' && score
                 ? `FT ${score}`
                 : f.kickoff
@@ -239,7 +239,7 @@ export function MatchCard({ fixture: f, onSelect, variant, day, isToday }: Match
         <span className="text-[11px] font-semibold uppercase text-muted-foreground">
           {formatShortDate(f.date).split(' ')[0]}
         </span>
-        <span className="font-display text-lg font-bold leading-none text-navy">
+        <span className="font-display text-lg font-bold leading-none text-brand">
           {formatShortDate(f.date).split(' ').slice(1).join(' ') || 'TBA'}
         </span>
       </span>
@@ -249,7 +249,17 @@ export function MatchCard({ fixture: f, onSelect, variant, day, isToday }: Match
         </span>
       )}
       <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 px-2 py-2 sm:px-3">
-        <span className="break-words text-[10px] font-semibold uppercase tracking-wider sm:text-[11px]" style={{ color: comp.color === '#F58220' ? '#B5621A' : comp.color === '#2AA8B5' ? '#13727D' : comp.color }}>
+        <span
+          className="break-words text-[10px] font-semibold uppercase tracking-wider sm:text-[11px]"
+          style={{
+            color:
+              comp.id === 'ACC'
+                ? 'var(--comp-acc-ink)'
+                : comp.id === 'PI'
+                  ? 'var(--comp-pi-ink)'
+                  : comp.color,
+          }}
+        >
           {comp.name} · {f.round}
         </span>
         <span className="truncate font-display text-base font-bold uppercase text-foreground sm:text-lg">
@@ -275,7 +285,7 @@ export function MatchCard({ fixture: f, onSelect, variant, day, isToday }: Match
             {outcome}
           </span>
         ) : (
-          <span className="font-display text-lg font-bold tabular-nums text-navy">
+          <span className="font-display text-lg font-bold tabular-nums text-brand">
             {f.kickoff ?? 'TBA'}
             {f.kickoff && !f.kickoffConfirmed && <span className="text-muted-foreground">*</span>}
           </span>
@@ -283,7 +293,7 @@ export function MatchCard({ fixture: f, onSelect, variant, day, isToday }: Match
         <span
           className={cn(
             'text-[10px] font-semibold uppercase tracking-wider text-muted-foreground',
-            (isLive(f) || isAwaitingResult(f)) && 'text-amber-700',
+            (isLive(f) || isAwaitingResult(f)) && 'text-amber-700 dark:text-amber-300',
           )}
         >
           {statusLabel(f)}

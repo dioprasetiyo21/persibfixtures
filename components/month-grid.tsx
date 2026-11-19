@@ -32,8 +32,8 @@ export function MonthGrid({
       id={`month-${monthKey}`}
       aria-label={monthLabel(monthKey)}
       className={cn(
-        'scroll-mt-40 overflow-hidden rounded-md border border-navy bg-white shadow-[0_1px_2px_rgba(10,35,80,0.08),0_4px_16px_-8px_rgba(10,35,80,0.25)] transition-shadow',
-        highlighted && 'ring-2 ring-[#3478D4] ring-offset-2',
+        'scroll-mt-40 overflow-hidden rounded-md border border-navy bg-card shadow-[0_1px_2px_rgba(10,35,80,0.08),0_4px_16px_-8px_rgba(10,35,80,0.25)] transition-shadow',
+        highlighted && 'ring-2 ring-ring ring-offset-2 ring-offset-background',
       )}
     >
       <header className="flex items-center justify-between bg-navy px-3 py-1.5 text-white">
@@ -64,7 +64,7 @@ export function MonthGrid({
         </thead>
         <tbody>
           {rows.map((week, ri) => (
-            <tr key={ri} className={cn(ri % 2 === 1 ? 'bg-[#F1F4F9]' : 'bg-white', ri > lastUsedRow && 'opacity-70')}>
+            <tr key={ri} className={cn(ri % 2 === 1 ? 'bg-muted/50' : 'bg-card', ri > lastUsedRow && 'opacity-70')}>
               {week.map((date, ci) => {
                 const list = date ? (fixturesByDate.get(date) ?? []) : []
                 const day = date ? Number(date.slice(8)) : undefined
@@ -73,7 +73,7 @@ export function MonthGrid({
                   <td
                     key={ci}
                     className={cn(
-                      'relative border border-gridline p-0 align-top',
+                      'relative border border-border p-0 align-top',
                       large ? 'h-24 sm:h-28' : 'h-[58px] sm:h-[66px]',
                     )}
                   >
@@ -84,7 +84,7 @@ export function MonthGrid({
                           large ? 'text-xs' : 'text-[9px]',
                           isToday
                             ? 'flex size-4 items-center justify-center rounded-full bg-navy font-bold text-white'
-                            : 'text-slate-500',
+                            : 'text-muted-foreground',
                         )}
                       >
                         {day}
@@ -102,7 +102,7 @@ export function MonthGrid({
                     )}
                     {list.length > 1 && (
                       <div className="flex h-full flex-col gap-px p-px">
-                        <span className="px-0.5 text-[9px] leading-none text-slate-600">{day}</span>
+                        <span className="px-0.5 text-[9px] leading-none text-muted-foreground">{day}</span>
                         {list.map((f) => (
                           <MatchCard key={f.id} fixture={f} onSelect={onSelect} variant="cell-mini" />
                         ))}

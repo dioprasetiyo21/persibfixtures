@@ -6,7 +6,7 @@ export function UpcomingStrip({ fixtures, onSelect }: { fixtures: Fixture[]; onS
   return (
     <section aria-labelledby="upcoming-heading" className="no-print">
       <div className="mb-2 flex items-end justify-between">
-        <h2 id="upcoming-heading" className="font-display text-xl font-bold uppercase tracking-wide text-navy">
+        <h2 id="upcoming-heading" className="font-display text-xl font-bold uppercase tracking-wide text-brand">
           Next 5 fixtures
         </h2>
         <span className="text-xs text-muted-foreground">All times WIB · * provisional kickoff</span>

@@ -45,7 +45,7 @@ export function TeamCrest({ name, className }: { name: string; className?: strin
       role="img"
       aria-label={name === 'TBD' ? 'Opponent to be decided' : `${name} (club crest placeholder)`}
       className={cn(
-        'flex size-16 items-center justify-center rounded-full border-2 border-slate-300 bg-slate-100 font-display text-lg font-bold tracking-wide text-slate-600 shadow-sm',
+        'flex size-16 items-center justify-center rounded-full border-2 border-border bg-muted font-display text-lg font-bold tracking-wide text-muted-foreground shadow-sm',
         className,
       )}
     >

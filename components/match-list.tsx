@@ -12,7 +12,7 @@ export function MatchList({ fixtures, onSelect }: { fixtures: Fixture[]; onSelec
     <div className="flex flex-col gap-6">
       {[...groups.entries()].map(([key, list]) => (
         <section key={key} aria-label={key === 'TBA' ? 'Date to be announced' : monthLabel(key)}>
-          <h3 className="mb-2 flex items-center gap-3 font-display text-lg font-bold uppercase tracking-wide text-navy">
+          <h3 className="mb-2 flex items-center gap-3 font-display text-lg font-bold uppercase tracking-wide text-brand">
             {key === 'TBA' ? 'Date TBA' : monthLabel(key)}
             <span className="h-px flex-1 bg-border" />
           </h3>

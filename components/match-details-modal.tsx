@@ -156,7 +156,7 @@ export function MatchDetailsModal({
                       href={f.source.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 font-medium text-[#1F5FB8] underline-offset-2 hover:underline"
+                      className="inline-flex items-center gap-1 font-medium text-info underline-offset-2 hover:underline"
                     >
                       {f.source.name}
                       <ExternalLink className="size-3" aria-hidden />
@@ -165,6 +165,21 @@ export function MatchDetailsModal({
                   </dd>
                 </div>
               </dl>
+
+              {showStats && (
+                <div className="border-t border-border px-5 py-3">
+                  <Button
+                    variant="info"
+                    className="h-10 w-full"
+                    onClick={() => setStatsOpen(true)}
+                    onPointerEnter={() => prefetchStatistics(f.id)}
+                    onFocus={() => prefetchStatistics(f.id)}
+                  >
+                    <BarChart3 aria-hidden />
+                    Lihat Statistik Pertandingan
+                  </Button>
+                </div>
+              )}
 
               <div className="flex flex-wrap gap-2 border-t border-border bg-muted/50 px-5 py-3">
                 {f.date && (
@@ -182,18 +197,6 @@ export function MatchDetailsModal({
                   {copied ? <Check aria-hidden /> : <Share2 aria-hidden />}
                   {copied ? 'Copied' : 'Share match'}
                 </Button>
-                {showStats && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setStatsOpen(true)}
-                    onPointerEnter={() => prefetchStatistics(f.id)}
-                    onFocus={() => prefetchStatistics(f.id)}
-                  >
-                    <BarChart3 aria-hidden />
-                    Lihat Statistik
-                  </Button>
-                )}
               </div>
             </>
           )

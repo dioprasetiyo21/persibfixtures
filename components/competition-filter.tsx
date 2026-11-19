@@ -34,13 +34,13 @@ export function CompetitionFilter({ value, onChange, counts }: CompetitionFilter
               'flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-ring',
               active
                 ? 'border-navy bg-navy text-white shadow-sm'
-                : 'border-border bg-white text-foreground hover:border-navy/40',
+                : 'border-border bg-card text-foreground hover:border-navy/40',
             )}
           >
             <span
               aria-hidden
-              className="size-2.5 rounded-sm ring-1 ring-black/10"
-              style={{ backgroundColor: c.id === 'ALL' ? (active ? '#fff' : '#0A2350') : c.color }}
+              className="size-2.5 rounded-sm ring-1 ring-black/10 dark:ring-white/20"
+              style={{ backgroundColor: c.id === 'ALL' ? (active ? '#fff' : 'var(--brand)') : c.color }}
             />
             {c.name}
             <span className={cn('tabular-nums', active ? 'text-white/70' : 'text-muted-foreground')}>{n}</span>

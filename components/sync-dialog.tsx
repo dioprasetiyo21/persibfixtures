@@ -23,7 +23,7 @@ function value(text: string | null): string {
 function ChangeCard({ change }: { change: ProposedChange }) {
   const comp = COMPETITION_MAP[change.competition]
   return (
-    <article className="rounded-lg border border-border bg-white p-3">
+    <article className="rounded-lg border border-border bg-card p-3">
       <header className="flex flex-wrap items-center gap-2">
         <span
           className="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider"
@@ -31,11 +31,11 @@ function ChangeCard({ change }: { change: ProposedChange }) {
         >
           {comp.short}
         </span>
-        <h4 className="font-display text-sm font-bold uppercase leading-tight text-navy">
+        <h4 className="font-display text-sm font-bold uppercase leading-tight text-brand">
           {change.home} vs {change.away}
         </h4>
         {change.kind === 'create' && (
-          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-800">
+          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300">
             New fixture
           </span>
         )}
@@ -63,7 +63,7 @@ function ChangeCard({ change }: { change: ProposedChange }) {
       </dl>
 
       {change.warnings.length > 0 && (
-        <ul className="mt-2 flex flex-col gap-1 rounded border border-amber-200 bg-amber-50 p-2 text-[11px] text-amber-900">
+        <ul className="mt-2 flex flex-col gap-1 rounded border border-amber-200 bg-amber-50 p-2 text-[11px] text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
           {change.warnings.map((warning) => (
             <li key={warning} className="flex gap-1.5">
               <AlertTriangle className="mt-0.5 size-3 shrink-0" aria-hidden />
@@ -79,7 +79,7 @@ function ChangeCard({ change }: { change: ProposedChange }) {
           href={change.source.url}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-1 font-medium text-[#1F5FB8] underline-offset-2 hover:underline"
+          className="inline-flex items-center gap-1 font-medium text-info underline-offset-2 hover:underline"
         >
           {change.source.name}
           <ExternalLink className="size-3" aria-hidden />
@@ -110,7 +110,7 @@ export function SyncDialog({ sync }: { sync: UseSync }) {
       >
         <DialogContent className="max-h-[90dvh] gap-0 overflow-hidden p-0 sm:max-w-2xl">
           <DialogHeader className="border-b border-border px-5 py-4">
-            <DialogTitle className="font-display text-lg font-bold uppercase tracking-wide text-navy">
+            <DialogTitle className="font-display text-lg font-bold uppercase tracking-wide text-brand">
               {title}
             </DialogTitle>
             <DialogDescription>{SYNC_MESSAGES.preview}</DialogDescription>
@@ -132,7 +132,7 @@ export function SyncDialog({ sync }: { sync: UseSync }) {
               </div>
 
               {preview.warnings.length > 0 && (
-                <ul className="flex flex-col gap-1 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-900">
+                <ul className="flex flex-col gap-1 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
                   {preview.warnings.map((warning) => (
                     <li key={warning}>{warning}</li>
                   ))}
@@ -167,7 +167,7 @@ export function SyncDialog({ sync }: { sync: UseSync }) {
                 <ul className="mt-2 flex flex-col gap-1.5">
                   {preview.reports.map((report) => (
                     <li key={report.name} className="flex flex-wrap items-baseline gap-x-2">
-                      <span className={cn('font-medium', report.ok ? 'text-emerald-700' : 'text-red-700')}>
+                      <span className={cn('font-medium', report.ok ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300')}>
                         {report.ok ? 'OK' : 'FAILED'}
                       </span>
                       <span className="text-foreground">{report.name}</span>
@@ -226,7 +226,7 @@ export function SyncDialog({ sync }: { sync: UseSync }) {
               aria-label="Sync admin token"
               autoComplete="off"
             />
-            {sync.detail && <p className="text-xs text-red-700">{sync.detail}</p>}
+            {sync.detail && <p className="text-xs text-red-700 dark:text-red-300">{sync.detail}</p>}
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" size="sm" onClick={sync.dismiss}>
                 Cancel

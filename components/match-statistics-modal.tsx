@@ -270,7 +270,7 @@ export function MatchStatisticsModal({
                   href={data.source.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-xs font-medium text-[#1F5FB8] underline-offset-2 hover:underline"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-info underline-offset-2 hover:underline"
                 >
                   Sumber resmi: {data.source.name}
                   <ExternalLink className="size-3" aria-hidden />

@@ -123,10 +123,10 @@ export function PersibCalendarApp() {
 
       <main className="mx-auto flex max-w-[1600px] flex-col gap-6 px-4 py-6 md:px-6">
         {error ? (
-          <div role="alert" className="flex flex-col items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-10 text-center">
-            <AlertTriangle className="size-8 text-red-600" aria-hidden />
-            <p className="font-semibold text-red-900">Could not load fixtures</p>
-            <p className="text-sm text-red-800/80">{error.message}</p>
+          <div role="alert" className="flex flex-col items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-10 text-center dark:border-red-500/30 dark:bg-red-500/10">
+            <AlertTriangle className="size-8 text-red-600 dark:text-red-400" aria-hidden />
+            <p className="font-semibold text-red-900 dark:text-red-200">Could not load fixtures</p>
+            <p className="text-sm text-red-800/80 dark:text-red-200/80">{error.message}</p>
             <Button variant="outline" size="sm" onClick={() => mutate()}>
               <RotateCw aria-hidden /> Try again
             </Button>
@@ -177,14 +177,14 @@ export function PersibCalendarApp() {
                   <span
                     className={
                       sync.phase === 'error'
-                        ? 'font-semibold text-red-700'
+                        ? 'font-semibold text-red-700 dark:text-red-300'
                         : sync.phase === 'success'
-                          ? 'font-semibold text-emerald-700'
-                          : 'font-semibold text-navy'
+                          ? 'font-semibold text-emerald-700 dark:text-emerald-300'
+                          : 'font-semibold text-brand'
                     }
                   >
                     {sync.message}
-                    {sync.detail && <span className="font-normal text-red-700"> · {sync.detail}</span>}
+                    {sync.detail && <span className="font-normal text-red-700 dark:text-red-300"> · {sync.detail}</span>}
                     {sync.result?.commit && (
                       <>
                         {' '}
@@ -224,10 +224,10 @@ export function PersibCalendarApp() {
                   'Scores update automatically while a match is in progress.'
                 )}
                 {data?.scores?.error && (
-                  <span className="font-semibold text-amber-700"> · live score overlay unavailable: {data.scores.error}</span>
+                  <span className="font-semibold text-amber-700 dark:text-amber-300"> · live score overlay unavailable: {data.scores.error}</span>
                 )}
                 {data?.datasetError && (
-                  <span className="font-semibold text-amber-700">
+                  <span className="font-semibold text-amber-700 dark:text-amber-300">
                     {' '}
                     · using bundled fixture data ({data.datasetError})
                   </span>
@@ -248,7 +248,7 @@ export function PersibCalendarApp() {
                   />
                   {undated.length > 0 && (
                     <div className="mt-2">
-                      <h3 className="mb-2 font-display text-lg font-bold uppercase tracking-wide text-navy">
+                      <h3 className="mb-2 font-display text-lg font-bold uppercase tracking-wide text-brand">
                         Date to be announced
                       </h3>
                       <MatchList fixtures={undated} onSelect={setSelected} />
@@ -290,12 +290,12 @@ function LoadingState() {
     <div aria-busy="true" aria-label="Loading fixtures" className="flex flex-col gap-6">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-24 animate-pulse rounded-lg bg-slate-200/70" />
+          <div key={i} className="h-24 animate-pulse rounded-lg bg-muted" />
         ))}
       </div>
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-[440px] animate-pulse rounded-md bg-slate-200/70" />
+          <div key={i} className="h-[440px] animate-pulse rounded-md bg-muted" />
         ))}
       </div>
     </div>
@@ -304,7 +304,7 @@ function LoadingState() {
 
 function EmptyState({ onReset }: { onReset: () => void }) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-white p-12 text-center">
+    <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card p-12 text-center">
       <CalendarX2 className="size-8 text-muted-foreground" aria-hidden />
       <p className="font-semibold">No matches found</p>
       <p className="text-sm text-muted-foreground">Try a different competition or search term.</p>
