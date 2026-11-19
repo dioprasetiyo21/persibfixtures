@@ -4,7 +4,7 @@
     "season": "2026/2027",
     "seasonStart": "2026-08",
     "seasonEnd": "2027-06",
-    "lastUpdated": "2026-11-15T13:40:49+07:00",
+    "lastUpdated": "2026-11-19T21:49:36+07:00",
     "timezone": "Asia/Jakarta",
     "notes": "Fixtures researched from official club and competition channels and Indonesian sports media on 7 Nov 2026. Kickoff times marked provisional come from the user-supplied reference schedule and await official confirmation. Knockout fixtures depend on qualification and draws."
   },
@@ -32,7 +32,7 @@
     {"id":"sl-08","competition":"SL","round":"Putaran 1 · Pekan 8","date":"2026-11-01","kickoff":"19:00","kickoffConfirmed":false,"opponent":"Isen Mulang Kalteng FC","venueType":"home","stadium":"Si Jalak Harupat","status":"finished","score":{"persib":4,"opponent":0},"notes":"Goals: Mariano Peralta, Luka Menalo (2), Marc Klok.","sourceKey":"antara","verifiedAt":"2026-11-15"},
     {"id":"acl-04","competition":"ACL2","round":"Group E · Matchday 4","date":"2026-11-04","kickoff":"14:45","kickoffConfirmed":true,"opponent":"Melbourne Victory","venueType":"away","stadium":"AAMI Park (Melbourne Rectangular Stadium)","city":"Melbourne, Australia","status":"finished","score":{"persib":2,"opponent":1},"notes":"Goals: Luka Menalo, Balsa Sekulic. Result secured Round of 16 qualification.","sourceKey":"afc","verifiedAt":"2026-11-07"},
     {"id":"sl-09","competition":"SL","round":"Putaran 1 · Pekan 9","date":"2026-11-08","kickoff":"19:00","kickoffConfirmed":true,"opponent":"Java United","venueType":"away","stadium":"Stadion Jatidiri","city":"Semarang","status":"finished","sourceKey":"detik","verifiedAt":"2026-11-15","score":{"persib":1,"opponent":2}},
-    {"id":"acc-02","competition":"ACC","round":"Group B · Matchday 2","date":"2026-11-19","kickoff":"19:00","kickoffConfirmed":true,"opponent":"Shan United","venueType":"home","stadium":"Stadion Gelora Bandung Lautan Api","status":"scheduled","sourceKey":"acc","verifiedAt":"2026-11-15"},
+    {"id":"acc-02","competition":"ACC","round":"Group B · Matchday 2","date":"2026-11-19","kickoff":"19:00","kickoffConfirmed":true,"opponent":"Shan United","venueType":"home","stadium":"Stadion Gelora Bandung Lautan Api","status":"finished","sourceKey":"acc","verifiedAt":"2026-11-19","score":{"persib":6,"opponent":0}},
     {"id":"sl-10","competition":"SL","round":"Putaran 1 · Pekan 10","date":"2026-11-22","kickoff":"19:00","kickoffConfirmed":true,"opponent":"Bali United","venueType":"home","stadium":"Stadion Gelora Bandung Lautan Api","city":"Bandung","status":"scheduled","sourceKey":"detik","verifiedAt":"2026-11-15"},
     {"id":"acl-05","competition":"ACL2","round":"Group E · Matchday 5","date":"2026-11-25","kickoff":"19:15","kickoffConfirmed":false,"opponent":"FC Seoul","venueType":"home","stadium":"Stadion Gelora Bandung Lautan Api","status":"scheduled","sourceKey":"afc","verifiedAt":"2026-11-07"},
     {"id":"sl-11","competition":"SL","round":"Putaran 1 · Pekan 11","date":"2026-11-29","kickoff":"19:00","kickoffConfirmed":true,"opponent":"Persita Tangerang","venueType":"away","stadium":"Indomilk Arena","status":"scheduled","sourceKey":"ileague","verifiedAt":"2026-11-15"},
