@@ -13,7 +13,6 @@ import type {
   StatisticsGroup,
   StatisticsSourceId,
   StatisticsSourceRef,
-  StatisticsState,
 } from './types'
 
 export type {

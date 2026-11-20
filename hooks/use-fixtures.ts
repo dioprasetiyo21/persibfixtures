@@ -1,6 +1,5 @@
 'use client'
 
-import { useCallback, useState } from 'react'
 import useSWR from 'swr'
 import { needsScorePolling } from '@/lib/fixtures'
 import type { FixturesPayload } from '@/lib/types'
@@ -25,24 +24,5 @@ export function useFixtures() {
         ? ACTIVE_POLL_INTERVAL_MS
         : BACKGROUND_POLL_INTERVAL_MS,
   })
-  const { mutate } = swr
-  const [isRefreshing, setIsRefreshing] = useState(false)
-  const [refreshError, setRefreshError] = useState<string | null>(null)
-
-  const refreshScores = useCallback(async () => {
-    setIsRefreshing(true)
-    setRefreshError(null)
-    try {
-      const next = await fetcher(`${ENDPOINT}?refresh=1`)
-      await mutate(next, { revalidate: false })
-      return next
-    } catch (error) {
-      setRefreshError(error instanceof Error ? error.message : 'Could not refresh scores')
-      return null
-    } finally {
-      setIsRefreshing(false)
-    }
-  }, [mutate])
-
-  return { ...swr, refreshScores, isRefreshing, refreshError }
+  return swr
 }

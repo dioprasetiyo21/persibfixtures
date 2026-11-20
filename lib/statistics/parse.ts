@@ -18,3 +18,8 @@ export function normalizePercent(value: number | null): number | null {
   const clamped = Math.min(100, Math.max(0, value))
   return Math.round(clamped * 10) / 10
 }
+
+/** Shared user-facing text for an unknown thrown value from a statistics source. */
+export function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'permintaan gagal'
+}

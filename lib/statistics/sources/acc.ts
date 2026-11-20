@@ -4,7 +4,7 @@ import { scrapeAcc } from '@/lib/sync/sources/acc'
 import { cleanText, sameTeam } from '@/lib/sync/teams'
 import type { Fixture } from '@/lib/types'
 import { STATS_FETCH_REVALIDATE, STATS_FETCH_TIMEOUT_MS } from '../config'
-import { toStatNumber } from '../parse'
+import { errorMessage, toStatNumber } from '../parse'
 import type { SourceStatRow, SourceStatistics } from '../types'
 
 const ORIGIN = 'https://aseanutdfc.com'
@@ -12,10 +12,6 @@ const STATS_BASE = `${ORIGIN}/asean-club-championship/match`
 
 /** Real ACC match ids are long opaque slugs; the composite fallback is not one. */
 const MATCH_ID_RE = /^[a-z0-9]{16,}$/i
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : 'permintaan gagal'
-}
 
 function empty(message?: string): SourceStatistics {
   return {

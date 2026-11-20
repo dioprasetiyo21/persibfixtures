@@ -10,15 +10,11 @@ import {
   STATS_FETCH_REVALIDATE,
   STATS_FETCH_TIMEOUT_MS,
 } from '../config'
-import { toStatNumber } from '../parse'
+import { errorMessage, toStatNumber } from '../parse'
 import type { SourceStatRow, SourceStatistics } from '../types'
 
 /** Public list of AFC matches; the only place a fixture's internal Opta id appears. */
 const MATCHES_PATH = '/en/matches'
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : 'permintaan gagal'
-}
 
 function empty(message?: string): SourceStatistics {
   return {

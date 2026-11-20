@@ -2,25 +2,17 @@ import bundled from '@/data/fixtures.json'
 import localResults from '@/data/results.json'
 import { validateDataset } from '@/lib/sync/dataset'
 import { readDataset } from '@/lib/sync/github'
+import type { Dataset } from '@/lib/sync/types'
 import { fetchSourceMatches, matchToFixtures, pendingFixtures } from '@/lib/score-sources'
 import type {
   Fixture,
   FixturesPayload,
-  RawFixture,
   ScoreResult,
   ScoresInfo,
-  SeasonMeta,
-  Source,
 } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
-
-interface Dataset {
-  meta: SeasonMeta
-  sources: Record<string, Source>
-  fixtures: RawFixture[]
-}
 
 type ResultMap = Record<string, ScoreResult>
 

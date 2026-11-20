@@ -2,15 +2,11 @@ import bundled from '@/data/fixtures.json'
 import { getMatchStatistics } from '@/lib/statistics'
 import { validateDataset } from '@/lib/sync/dataset'
 import { readDataset } from '@/lib/sync/github'
-import type { Fixture, RawFixture, Source } from '@/lib/types'
+import type { Dataset } from '@/lib/sync/types'
+import type { Fixture } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
-
-interface Dataset {
-  sources: Record<string, Source>
-  fixtures: RawFixture[]
-}
 
 const ID_RE = /^[a-z0-9][a-z0-9-]{0,63}$/i
 

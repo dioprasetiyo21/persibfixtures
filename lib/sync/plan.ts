@@ -1,3 +1,4 @@
+import { STATUS_LABEL } from '@/lib/fixtures'
 import type { CompetitionId, MatchStatus, RawFixture, VenueType } from '@/lib/types'
 import { cloneDataset } from './dataset'
 import { TZ } from './config'
@@ -46,15 +47,6 @@ const FIELD_LABELS: Record<string, string> = {
   sourceMatchId: 'Official match id',
 }
 
-const STATUS_TEXT: Record<MatchStatus, string> = {
-  finished: 'Finished',
-  scheduled: 'Scheduled',
-  tentative: 'Provisional',
-  tba: 'Date TBA',
-  postponed: 'Postponed',
-  cancelled: 'Cancelled',
-}
-
 const VENUE_TEXT: Record<VenueType, string> = {
   home: 'Home',
   away: 'Away',
@@ -62,7 +54,7 @@ const VENUE_TEXT: Record<VenueType, string> = {
   tba: 'TBA',
 }
 
-export function formatFieldValue(field: string, value: unknown): string | null {
+function formatFieldValue(field: string, value: unknown): string | null {
   if (value === null || value === undefined) return null
   switch (field) {
     case 'date':
@@ -70,7 +62,7 @@ export function formatFieldValue(field: string, value: unknown): string | null {
     case 'kickoff':
       return `${value} WIB`
     case 'status':
-      return STATUS_TEXT[value as MatchStatus] ?? String(value)
+      return STATUS_LABEL[value as MatchStatus] ?? String(value)
     case 'venueType':
       return VENUE_TEXT[value as VenueType] ?? String(value)
     case 'score': {
