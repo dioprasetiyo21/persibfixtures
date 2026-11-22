@@ -1,3 +1,5 @@
+import type { PublicHighlight } from './highlights/types'
+
 export type CompetitionId = 'SL' | 'ACL2' | 'ACC' | 'ILC' | 'PI' | 'FR'
 
 export type MatchStatus =
@@ -72,6 +74,8 @@ export interface FixturesPayload {
   datasetSource?: 'github' | 'raw' | 'local' | 'bundled' | 'remote'
   /** Populated when GitHub was unreachable and the bundled copy was used. */
   datasetError?: string
+  /** Published highlights keyed by fixture id; absent when none are available. */
+  highlights?: Record<string, PublicHighlight>
 }
 
 export type ViewMode = 'season' | 'month' | 'upcoming' | 'completed'

@@ -1,0 +1,5 @@
+{
+  "_comment": "Match highlight videos keyed by stable fixture id from data/fixtures.json. Manual entries take priority over automatic YouTube candidates and are never overwritten by automatic search.",
+  "highlights": {},
+  "searchState": {}
+}

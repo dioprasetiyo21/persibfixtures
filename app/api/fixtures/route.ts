@@ -1,5 +1,7 @@
 import bundled from '@/data/fixtures.json'
 import localResults from '@/data/results.json'
+import { publicHighlights, readHighlightStore } from '@/lib/highlights/store'
+import type { PublicHighlight } from '@/lib/highlights/types'
 import { validateDataset } from '@/lib/sync/dataset'
 import { readDataset } from '@/lib/sync/github'
 import type { Dataset } from '@/lib/sync/types'
@@ -159,6 +161,17 @@ export async function GET(request: Request) {
       }
     }
 
+    // Highlights are optional and isolated: a missing or invalid highlight
+    // store must never affect fixtures, scores, statistics, or the calendar.
+    let highlights: Record<string, PublicHighlight> | undefined
+    try {
+      const current = await readHighlightStore({ fresh: forceFresh })
+      const published = publicHighlights(current.store)
+      if (Object.keys(published).length > 0) highlights = published
+    } catch {
+      // Degrade to no highlights.
+    }
+
     const scoresError = errors.length > 0 ? errors.join(' · ') : undefined
     const { fixtures, applied } = normalize(base.dataset, results)
     const payload: FixturesPayload = {
@@ -168,6 +181,7 @@ export async function GET(request: Request) {
       datasetSource: base.source,
       ...(base.error ? { datasetError: base.error } : {}),
       scores: { origin, applied, ...(scoresError ? { error: scoresError } : {}) },
+      ...(highlights ? { highlights } : {}),
     }
     return Response.json(payload, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {

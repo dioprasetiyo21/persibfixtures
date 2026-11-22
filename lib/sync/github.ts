@@ -1,5 +1,5 @@
 import localDataset from '@/data/fixtures.json'
-import { githubConfig, rawFixturesUrl, type GithubConfig } from './config'
+import { githubConfig, rawFileUrl, rawFixturesUrl, type GithubConfig } from './config'
 import { DatasetError, validateDataset } from './dataset'
 import type { Dataset } from './types'
 
@@ -42,8 +42,8 @@ function headers(cfg: GithubConfig): Record<string, string> {
   return out
 }
 
-function contentsUrl(cfg: GithubConfig): string {
-  return `${cfg.apiBase}/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path}`
+function contentsUrl(cfg: GithubConfig, path = cfg.path): string {
+  return `${cfg.apiBase}/repos/${cfg.owner}/${cfg.repo}/contents/${path.replace(/^\/+/, '')}`
 }
 
 function decodeBase64(value: string): string {
@@ -138,18 +138,86 @@ export async function readDataset(options: { fresh?: boolean } = {}): Promise<Re
   }
 }
 
+export interface JsonFileResult<T> {
+  value: T
+  sha: string | null
+  source: 'github' | 'raw' | 'local'
+  /** Non-secret, user-facing note when a fallback copy was used. */
+  warning?: string
+}
+
+/**
+ * Generic read for secondary JSON files such as data/highlights.json. It reuses
+ * the existing GitHub credential and Contents API path handling, but degrades
+ * safely to a supplied fallback instead of failing the whole page.
+ */
+export async function readJsonFile<T>(args: {
+  cfg: GithubConfig
+  validate: (raw: unknown) => T
+  fallback: T
+  fresh?: boolean
+}): Promise<JsonFileResult<T>> {
+  const { cfg, validate, fallback } = args
+  const revalidate = args.fresh ? 0 : 30
+  const fallbackFor = (warning: string): JsonFileResult<T> => ({
+    value: fallback,
+    sha: null,
+    source: 'local',
+    warning,
+  })
+
+  if (cfg.token) {
+    const { status, body } = await githubFetch(`${contentsUrl(cfg)}?ref=${encodeURIComponent(cfg.branch)}`, cfg, {
+      method: 'GET',
+    })
+    if (status === 401) throw new GithubError('GitHub rejected GITHUB_TOKEN', 'config', 401)
+    if (status === 403) throw new GithubError('GITHUB_TOKEN is not allowed to read this repository', 'config', 403)
+    if (status === 404) return fallbackFor(`${cfg.path} does not exist on GitHub yet; using an empty copy`)
+    if (status !== 200) throw new GithubError(`GitHub responded ${status}`, 'github_error', 502, body)
+
+    const file = body as { content?: string; sha?: string }
+    if (!file?.content || !file.sha) {
+      return fallbackFor(`GitHub returned an unexpected payload for ${cfg.path}`)
+    }
+    try {
+      return { value: validate(JSON.parse(decodeBase64(file.content))), sha: file.sha, source: 'github' }
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : 'invalid JSON'
+      return fallbackFor(`${cfg.path} is invalid (${reason}); using an empty copy`)
+    }
+  }
+
+  try {
+    const res = await fetch(rawFileUrl(cfg, cfg.path), {
+      headers: { Accept: 'application/json', 'User-Agent': 'PersibFixturesSync/1.0' },
+      ...(revalidate === 0 ? { cache: 'no-store' as const } : { next: { revalidate, tags: ['fixtures'] } }),
+    })
+    if (!res.ok) throw new Error(`raw.githubusercontent.com responded ${res.status}`)
+    return { value: validate(await res.json()), sha: null, source: 'raw' }
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : 'unknown error'
+    return fallbackFor(`Could not read ${cfg.path} (${reason}); using an empty copy`)
+  }
+}
+
 export interface WriteResult {
   commit: { sha: string; url: string; message: string }
   fileSha: string
 }
 
-/** Write data/fixtures.json back to GitHub. Requires GITHUB_TOKEN. */
-export async function writeDataset(args: {
+/**
+ * Write one JSON file back to GitHub with the existing Contents API flow.
+ * Requires GITHUB_TOKEN; secondary files pass their own config/path.
+ */
+export async function writeJsonFile(args: {
   content: string
   sha: string | null
   message: string
+  cfg?: GithubConfig
+  path?: string
 }): Promise<WriteResult> {
-  const cfg = githubConfig()
+  const cfg = args.cfg ?? githubConfig()
+  const path = args.path ?? cfg.path
   if (!cfg.token) {
     throw new GithubError(
       'GITHUB_TOKEN is not configured, so changes cannot be committed',
@@ -165,7 +233,7 @@ export async function writeDataset(args: {
   }
   if (args.sha) body.sha = args.sha
 
-  const { status, body: response } = await githubFetch(contentsUrl(cfg), cfg, {
+  const { status, body: response } = await githubFetch(contentsUrl(cfg, path), cfg, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -203,7 +271,20 @@ export async function writeDataset(args: {
   }
 }
 
-export function commitMessageFor(kind: 'schedule' | 'scores', count: number): string {
+/** Backwards-compatible wrapper for the primary fixtures dataset. */
+export async function writeDataset(args: {
+  content: string
+  sha: string | null
+  message: string
+}): Promise<WriteResult> {
+  return writeJsonFile(args)
+}
+
+export function commitMessageFor(kind: 'schedule' | 'scores' | 'highlights', count: number): string {
+  if (kind === 'highlights') {
+    const suffix = count > 0 ? ` (${count} highlight${count === 1 ? '' : 's'})` : ''
+    return `Update Persib match highlights${suffix}`
+  }
   const suffix = count > 0 ? ` (${count} fixture${count === 1 ? '' : 's'})` : ''
   return kind === 'schedule'
     ? `Update Persib fixtures schedule${suffix}`

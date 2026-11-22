@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
+import type { HighlightSelection } from '@/lib/highlights/types'
 import type { SyncConfirmResult, SyncKind, SyncPreview } from '@/lib/sync/types'
 
 /** User-facing status copy, kept in one place so it never drifts from the spec. */
@@ -10,6 +11,7 @@ export const SYNC_MESSAGES = {
   preview: 'Changes found. Review before applying.',
   cancelled: 'Changes cancelled. GitHub data was not modified.',
   committed: 'Changes successfully committed to GitHub.',
+  partial: 'Some changes were committed, but not all files could be updated.',
   upToDate: 'All fixtures are already up to date. No commit required.',
   failed: 'Refresh failed. Existing fixture data remains unchanged.',
 } as const
@@ -58,6 +60,14 @@ function readError(body: unknown, status: number): { detail: string; authRequire
   return { detail, authRequired: payload?.authRequired === true }
 }
 
+/** Partial success is driven by failed files, never by non-fatal search warnings. */
+export function statusMessageForResult(result: SyncConfirmResult): string {
+  const hasFailedFile = result.files?.some((file) => file.action === 'failed') ?? false
+  if (hasFailedFile) return SYNC_MESSAGES.partial
+  if (result.committed) return SYNC_MESSAGES.committed
+  return result.message || SYNC_MESSAGES.upToDate
+}
+
 export function useSync(options: { onCommitted?: () => void | Promise<unknown> } = {}) {
   const [state, setState] = useState<SyncState>(INITIAL)
   const busy = useRef(false)
@@ -101,7 +111,12 @@ export function useSync(options: { onCommitted?: () => void | Promise<unknown> }
       }
 
       const preview = body as SyncPreview
-      if (!preview?.changes?.length) {
+      const hasHighlightWork =
+        !!preview?.highlights &&
+        (preview.highlights.candidates.length > 0 ||
+          preview.highlights.manualTargets.length > 0 ||
+          preview.highlights.searchStateChanged)
+      if (!preview?.changes?.length && !hasHighlightWork) {
         setState({
           ...INITIAL,
           kind,
@@ -135,7 +150,7 @@ export function useSync(options: { onCommitted?: () => void | Promise<unknown> }
     }
   }, [])
 
-  const confirm = useCallback(async () => {
+  const confirm = useCallback(async (selection?: HighlightSelection) => {
     const token = tokenRef.current
     if (!token || busy.current) return
     busy.current = true
@@ -151,7 +166,7 @@ export function useSync(options: { onCommitted?: () => void | Promise<unknown> }
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...adminHeaders() },
         cache: 'no-store',
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ token, ...(selection ? { selection } : {}) }),
       })
       const body = (await res.json().catch(() => null)) as unknown
 
@@ -176,9 +191,7 @@ export function useSync(options: { onCommitted?: () => void | Promise<unknown> }
         kind: lastKind.current,
         phase: 'success',
         result,
-        message: result.committed
-          ? SYNC_MESSAGES.committed
-          : (result.message || SYNC_MESSAGES.upToDate),
+        message: statusMessageForResult(result),
       })
 
       if (result.committed) {

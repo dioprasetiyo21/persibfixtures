@@ -1,3 +1,4 @@
+import type { HighlightPreview, PendingHighlights } from '@/lib/highlights/types'
 import type {
   CompetitionId,
   MatchStatus,
@@ -114,6 +115,8 @@ export interface SyncPreview {
   reports: SourceReport[]
   skipped: SkippedMatch[]
   warnings: string[]
+  /** Present for schedule previews; candidates are never published without confirmation. */
+  highlights?: HighlightPreview
 }
 
 export interface SyncConfirmResult {
@@ -125,6 +128,17 @@ export interface SyncConfirmResult {
   fileSha: string | null
   branch: string
   path: string
+  /** Number of approved highlight operations that changed data/highlights.json. */
+  highlightsApplied?: number
+  /** Per-file outcome, including partial failures. */
+  files?: Array<{
+    path: string
+    committed: boolean
+    sha: string | null
+    action: 'changed' | 'unchanged' | 'failed'
+  }>
+  /** Non-secret messages describing partial writes or skipped operations. */
+  warnings?: string[]
 }
 
 /** Payload embedded in the signed confirmation token. */
@@ -146,6 +160,8 @@ export interface PendingPayload {
     competition: CompetitionId
     label: string
   }>
+  /** Optional highlight data signed into a schedule preview. Old tokens omit this. */
+  highlights?: PendingHighlights
 }
 
 export interface Dataset {
@@ -165,6 +181,7 @@ export type SyncErrorCode =
   | 'github_conflict'
   | 'github_error'
   | 'invalid_dataset'
+  | 'invalid_selection'
   | 'no_changes'
   | 'internal'
 

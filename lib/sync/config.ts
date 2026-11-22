@@ -32,8 +32,20 @@ export function githubConfig(): GithubConfig {
   }
 }
 
+export function rawFileUrl(cfg: GithubConfig, path: string): string {
+  return `https://raw.githubusercontent.com/${cfg.owner}/${cfg.repo}/${cfg.branch}/${path.replace(/^\/+/, '')}`
+}
+
 export function rawFixturesUrl(cfg: GithubConfig = githubConfig()): string {
-  return `https://raw.githubusercontent.com/${cfg.owner}/${cfg.repo}/${cfg.branch}/${cfg.path}`
+  return rawFileUrl(cfg, cfg.path)
+}
+
+/** Highlights share the existing GitHub repository/branch/token but use their own path. */
+export function highlightsConfig(): GithubConfig {
+  return {
+    ...githubConfig(),
+    path: str(process.env.HIGHLIGHTS_FILE_PATH, 'data/highlights.json').replace(/^\/+/, ''),
+  }
 }
 
 export interface IleagueCompetitionConfig {

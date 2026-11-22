@@ -60,6 +60,10 @@ export function PersibCalendarApp() {
   }, [all])
 
   const selected = useMemo(() => all.find((f) => f.id === selectedId) ?? null, [all, selectedId])
+  const selectedHighlight = useMemo(
+    () => (selectedId && data?.highlights ? data.highlights[selectedId] ?? null : null),
+    [selectedId, data?.highlights],
+  )
   const setSelected = (f: Fixture | null) => setSelectedId(f?.id ?? null)
 
   const upcoming = all.filter((f) => isUpcoming(f))
@@ -198,6 +202,11 @@ export function PersibCalendarApp() {
                         </a>
                       </>
                     )}
+                    {sync.phase === 'success' && !!sync.result?.warnings?.length && (
+                      <span className="block font-normal text-amber-700 dark:text-amber-300">
+                        Warnings: {sync.result.warnings.join(' · ')}
+                      </span>
+                    )}
                     {sync.phase === 'error' && (
                       <button
                         type="button"
@@ -278,6 +287,7 @@ export function PersibCalendarApp() {
         onOpenChange={(o) => !o && setSelected(null)}
         onRefreshScores={handleRefresh}
         isRefreshing={sync.busyKind === 'scores'}
+        highlight={selectedHighlight}
       />
 
       <SyncDialog sync={sync} />

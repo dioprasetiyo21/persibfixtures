@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { BarChart3, CalendarPlus, Check, ExternalLink, RefreshCw, Share2 } from 'lucide-react'
+import { BarChart3, CalendarPlus, Check, ExternalLink, Play, RefreshCw, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
+import { HighlightVideoDialog } from '@/components/highlight-video-dialog'
 import { MatchStatisticsModal } from '@/components/match-statistics-modal'
 import { TeamCrest } from '@/components/team-crest'
 import { prefetchStatistics } from '@/hooks/use-match-statistics'
@@ -19,6 +20,7 @@ import {
   venueLabel,
 } from '@/lib/fixtures'
 import { exportICS, shareText } from '@/lib/export'
+import type { PublicHighlight } from '@/lib/highlights/types'
 import type { Fixture } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -27,23 +29,34 @@ export function MatchDetailsModal({
   onOpenChange,
   onRefreshScores,
   isRefreshing,
+  highlight,
 }: {
   fixture: Fixture | null
   onOpenChange: (open: boolean) => void
   onRefreshScores: () => void
   isRefreshing: boolean
+  highlight?: PublicHighlight | null
 }) {
   const [copied, setCopied] = useState(false)
   const [statsOpen, setStatsOpen] = useState(false)
+  const [videoOpen, setVideoOpen] = useState(false)
   const [canHover, setCanHover] = useState(true)
   const f = fixture
 
   // The statistics button and its prefetch share one eligibility check so the
   // rules (finished match, supported competition) never drift apart.
   const showStats = !!f && f.status === 'finished' && supportsStatistics(f.competition)
+  // The API only sends published, validated entries; the extra check keeps the
+  // button hidden even if a malformed payload reaches the browser.
+  const showHighlight =
+    !!highlight &&
+    highlight.status === 'published' &&
+    !!highlight.videoId &&
+    !!highlight.embedUrl
 
   useEffect(() => {
     setStatsOpen(false)
+    setVideoOpen(false)
   }, [f?.id])
 
   // Touch devices cannot hover, so warm the cache shortly after the details
@@ -61,7 +74,10 @@ export function MatchDetailsModal({
   }, [])
 
   function handleOpenChange(next: boolean) {
-    if (!next) setStatsOpen(false)
+    if (!next) {
+      setStatsOpen(false)
+      setVideoOpen(false)
+    }
     onOpenChange(next)
   }
 
@@ -166,18 +182,30 @@ export function MatchDetailsModal({
                 </div>
               </dl>
 
-              {showStats && (
-                <div className="border-t border-border px-5 py-3">
-                  <Button
-                    variant="info"
-                    className="h-10 w-full"
-                    onClick={() => setStatsOpen(true)}
-                    onPointerEnter={() => prefetchStatistics(f.id)}
-                    onFocus={() => prefetchStatistics(f.id)}
-                  >
-                    <BarChart3 aria-hidden />
-                    Lihat Statistik Pertandingan
-                  </Button>
+              {(showHighlight || showStats) && (
+                <div className="flex flex-col gap-2 border-t border-border px-5 py-3">
+                  {showHighlight && (
+                    <Button
+                      variant="info"
+                      className="h-10 w-full"
+                      onClick={() => setVideoOpen(true)}
+                    >
+                      <Play aria-hidden />
+                      Watch Highlights
+                    </Button>
+                  )}
+                  {showStats && (
+                    <Button
+                      variant="info"
+                      className="h-10 w-full"
+                      onClick={() => setStatsOpen(true)}
+                      onPointerEnter={() => prefetchStatistics(f.id)}
+                      onFocus={() => prefetchStatistics(f.id)}
+                    >
+                      <BarChart3 aria-hidden />
+                      Lihat Statistik Pertandingan
+                    </Button>
+                  )}
                 </div>
               )}
 
@@ -204,6 +232,7 @@ export function MatchDetailsModal({
       </DialogContent>
     </Dialog>
     <MatchStatisticsModal fixture={f} open={statsOpen} onOpenChange={setStatsOpen} />
+    <HighlightVideoDialog highlight={highlight ?? null} open={videoOpen} onOpenChange={setVideoOpen} />
     </>
   )
 }
