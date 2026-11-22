@@ -1,61 +1,46 @@
-import { ADMIN_TOKEN } from './config'
-import { safeEqual } from './pending'
+import {
+  readSessionCookie,
+  verifyAdminSession,
+  verifyMutationOrigin,
+} from '../admin/session'
 
 export interface AuthFailure {
   ok: false
   status: number
-  code: 'unauthorized'
+  code: 'unauthorized' | 'forbidden'
   message: string
   authRequired: boolean
 }
 
-function hostOf(value: string | null): string | null {
-  if (!value) return null
-  try {
-    return new URL(value).host
-  } catch {
-    return null
-  }
-}
-
 /**
- * Protect write-capable endpoints.
+ * Protect write-capable endpoints. Every refresh, preview, confirm and GitHub
+ * writeback passes through here before any dataset work happens.
  *
- * - When SYNC_ADMIN_TOKEN is set, every call must present it.
- * - Otherwise browsers must call from the same origin (CSRF protection).
- *   Non-browser clients without an Origin header are allowed but rate limited.
+ * - Origin is validated for every mutation (CSRF defence).
+ * - A signed, short-lived admin session cookie is required.
+ * - Non-browser clients must obtain a session through /api/admin/login too.
  */
 export function authorize(request: Request): { ok: true } | AuthFailure {
-  if (ADMIN_TOKEN) {
-    const header = request.headers.get('x-sync-token')
-    const bearer = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
-    const provided = header ?? bearer ?? ''
-    if (!provided || !safeEqual(provided, ADMIN_TOKEN)) {
-      return {
-        ok: false,
-        status: 401,
-        code: 'unauthorized',
-        message: 'This action requires the sync admin token',
-        authRequired: true,
-      }
-    }
-    return { ok: true }
-  }
-
-  const origin = request.headers.get('origin')
-  if (!origin) return { ok: true }
-
-  const requestHost = request.headers.get('x-forwarded-host') ?? hostOf(request.url)
-  const originHost = hostOf(origin)
-  if (!originHost || !requestHost || originHost !== requestHost) {
+  if (!verifyMutationOrigin(request)) {
     return {
       ok: false,
       status: 403,
-      code: 'unauthorized',
+      code: 'forbidden',
       message: 'Cross-origin refresh requests are not allowed',
       authRequired: false,
     }
   }
+
+  if (!verifyAdminSession(readSessionCookie(request))) {
+    return {
+      ok: false,
+      status: 401,
+      code: 'unauthorized',
+      message: 'Admin sign-in required or session expired. Please sign in again.',
+      authRequired: true,
+    }
+  }
+
   return { ok: true }
 }
 

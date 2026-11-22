@@ -189,7 +189,7 @@ const EMPTY_SELECTION: HighlightSelection = {
 }
 
 export function SyncDialog({ sync }: { sync: UseSync }) {
-  const [adminToken, setAdminToken] = useState('')
+  const [adminPassword, setAdminPassword] = useState('')
   const [selection, setSelection] = useState<HighlightSelection>(EMPTY_SELECTION)
 
   const preview = sync.preview
@@ -199,7 +199,7 @@ export function SyncDialog({ sync }: { sync: UseSync }) {
       highlights.manualTargets.length > 0 ||
       highlights.searchStateChanged)
   const open = sync.phase === 'preview' || sync.phase === 'committing'
-  const authOpen = sync.phase === 'error' && sync.authRequired
+  const authOpen = sync.authOpen
   const committing = sync.phase === 'committing'
   const title = sync.kind === 'scores'
     ? 'Score changes found'
@@ -428,6 +428,16 @@ export function SyncDialog({ sync }: { sync: UseSync }) {
                   : `${selectedCount} highlight${selectedCount === 1 ? '' : 's'} selected`}
               </span>
             )}
+            {sync.authenticated === true && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => void sync.logout()}
+                disabled={committing}
+              >
+                Sign out
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={sync.cancel} disabled={committing}>
               Cancel
             </Button>
@@ -451,36 +461,46 @@ export function SyncDialog({ sync }: { sync: UseSync }) {
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Admin token required</DialogTitle>
+            <DialogTitle>Admin password required</DialogTitle>
             <DialogDescription>
-              This deployment protects refresh actions with a sync admin token. Paste it below; it is kept only in
-              this browser tab.
+              Refresh actions are protected by an admin password. It is verified on the server and never stored in
+              this browser; a signed 8-hour session cookie is used instead.
             </DialogDescription>
           </DialogHeader>
           <form
             className="flex flex-col gap-3"
             onSubmit={(event) => {
               event.preventDefault()
-              sync.saveAdminToken(adminToken)
-              setAdminToken('')
-              sync.retry()
+              void (async () => {
+                const signedIn = await sync.login(adminPassword)
+                if (signedIn) {
+                  setAdminPassword('')
+                  sync.retry()
+                }
+              })()
             }}
           >
             <Input
               type="password"
-              value={adminToken}
-              onChange={(event) => setAdminToken(event.target.value)}
-              placeholder="Sync admin token"
-              aria-label="Sync admin token"
-              autoComplete="off"
+              value={adminPassword}
+              onChange={(event) => setAdminPassword(event.target.value)}
+              placeholder="Admin password"
+              aria-label="Admin password"
+              autoComplete="current-password"
+              disabled={sync.authSubmitting}
             />
-            {sync.detail && <p className="text-xs text-red-700 dark:text-red-300">{sync.detail}</p>}
+            {(sync.authMessage ?? sync.detail) && (
+              <p className="text-xs text-red-700 dark:text-red-300" role="alert">
+                {sync.authMessage ?? sync.detail}
+              </p>
+            )}
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={sync.dismiss}>
+              <Button type="button" variant="outline" size="sm" onClick={sync.dismiss} disabled={sync.authSubmitting}>
                 Cancel
               </Button>
-              <Button type="submit" size="sm" disabled={!adminToken.trim()}>
-                Save & retry
+              <Button type="submit" size="sm" disabled={!adminPassword || sync.authSubmitting}>
+                {sync.authSubmitting && <Loader2 className="animate-spin" aria-hidden />}
+                {sync.authSubmitting ? 'Signing in…' : 'Sign in & retry'}
               </Button>
             </div>
           </form>

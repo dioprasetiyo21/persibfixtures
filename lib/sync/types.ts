@@ -172,6 +172,8 @@ export interface Dataset {
 
 export type SyncErrorCode =
   | 'unauthorized'
+  | 'forbidden'
+  | 'invalid_password'
   | 'rate_limited'
   | 'config'
   | 'source_unavailable'

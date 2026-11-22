@@ -2,11 +2,19 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
 const routeHandler = require('../lib/sync/route-handler') as typeof import('../lib/sync/route-handler')
+const session = require('../lib/admin/session') as typeof import('../lib/admin/session')
+
+const { token } = session.createAdminSession()
+const AUTH_HEADERS: Record<string, string> = {
+  origin: 'http://localhost',
+  'x-forwarded-for': '203.0.113.10',
+  cookie: `${session.ADMIN_COOKIE}=${encodeURIComponent(token)}`,
+}
 
 function confirmRequest(selection: unknown): Request {
   return new Request('http://localhost/api/refresh/confirm', {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...AUTH_HEADERS },
     body: JSON.stringify({ token: 'invalid-token', selection }),
   })
 }

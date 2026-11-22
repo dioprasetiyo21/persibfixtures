@@ -101,10 +101,9 @@ export const FETCH_TIMEOUT_MS = int(process.env.SYNC_FETCH_TIMEOUT_MS, 15_000)
 /** Pending confirmation tokens live for 10 minutes by default. */
 export const PENDING_TTL_SECONDS = Math.min(int(process.env.SYNC_PENDING_TTL_SECONDS, 600), 1_800)
 
-/** Optional shared secret. When set, every refresh/confirm call must present it. */
-export const ADMIN_TOKEN = process.env.SYNC_ADMIN_TOKEN?.trim() || null
-
 export const RATE_LIMITS = {
+  /** Login attempts are limited separately from preview/confirm work. */
+  login: { limit: int(process.env.SYNC_LOGIN_RATE_LIMIT, 10), windowMs: 10 * 60_000 },
   preview: { limit: int(process.env.SYNC_PREVIEW_RATE_LIMIT, 8), windowMs: 10 * 60_000 },
   confirm: { limit: int(process.env.SYNC_CONFIRM_RATE_LIMIT, 10), windowMs: 10 * 60_000 },
 }

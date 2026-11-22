@@ -54,7 +54,7 @@ function mapError(error: unknown): Response {
 function guard(request: Request, scope: 'preview' | 'confirm'): Response | null {
   const auth = authorize(request)
   if (!auth.ok) {
-    return errorResponse('unauthorized', auth.message, auth.status, { authRequired: auth.authRequired })
+    return errorResponse(auth.code, auth.message, auth.status, { authRequired: auth.authRequired })
   }
   const limit = RATE_LIMITS[scope]
   const result = rateLimit(scope, clientKey(request), limit.limit, limit.windowMs)

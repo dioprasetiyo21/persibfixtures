@@ -70,16 +70,24 @@ test('verified manual URL wins over auto approval and rejection, with enriched m
   assert.equal(result.warnings.length, 0)
 })
 
-test('unverifiable manual URL produces a clear warning and no publish operation', async () => {
+test('unverifiable manual URL is still saved with basic metadata and a clear warning', async () => {
   const result = await store.operationsFromSelection(signed, {
     approvedCandidateIds: [],
     rejectedFixtureIds: [],
     manualUrls: { 'fx-1': 'https://www.youtube.com/watch?v=notfound001' },
   })
 
-  assert.equal(result.operations.length, 0)
+  assert.equal(result.operations.length, 1)
+  const operation = result.operations[0]
+  assert.equal(operation.action, 'publish-manual')
+  assert.equal(operation.videoId, 'notfound001')
+  assert.equal(operation.url, 'https://www.youtube.com/watch?v=notfound001')
+  assert.equal(operation.title, 'Match highlights')
+  assert.equal(operation.channel, 'Manual URL')
+  assert.equal(operation.channelId, undefined)
   assert.equal(result.warnings.length, 1)
   assert.match(result.warnings[0], /could not be verified/i)
+  assert.match(result.warnings[0], /saved with basic metadata/i)
   assert.match(result.warnings[0], /not found/i)
 })
 

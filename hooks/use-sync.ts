@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { HighlightSelection } from '@/lib/highlights/types'
 import type { SyncConfirmResult, SyncKind, SyncPreview } from '@/lib/sync/types'
 
@@ -43,14 +43,6 @@ const INITIAL: SyncState = {
   authRequired: false,
 }
 
-const ADMIN_TOKEN_KEY = 'persib-sync-admin-token'
-
-function adminHeaders(): Record<string, string> {
-  if (typeof window === 'undefined') return {}
-  const token = window.sessionStorage.getItem(ADMIN_TOKEN_KEY)
-  return token ? { 'x-sync-token': token } : {}
-}
-
 function readError(body: unknown, status: number): { detail: string; authRequired: boolean } {
   const payload = body as { error?: unknown; authRequired?: unknown } | null
   const detail =
@@ -70,17 +62,39 @@ export function statusMessageForResult(result: SyncConfirmResult): string {
 
 export function useSync(options: { onCommitted?: () => void | Promise<unknown> } = {}) {
   const [state, setState] = useState<SyncState>(INITIAL)
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null)
+  const [authOpen, setAuthOpen] = useState(false)
+  const [authMessage, setAuthMessage] = useState<string | null>(null)
+  const [authSubmitting, setAuthSubmitting] = useState(false)
   const busy = useRef(false)
   const lastKind = useRef<SyncKind>('schedule')
   const tokenRef = useRef<string | null>(null)
   const onCommitted = useRef(options.onCommitted)
   onCommitted.current = options.onCommitted
 
+  // The cookie is HttpOnly, so the client only knows a boolean status.
+  useEffect(() => {
+    let active = true
+    void (async () => {
+      try {
+        const res = await fetch('/api/admin/session', { cache: 'no-store' })
+        const body = (await res.json().catch(() => null)) as { authenticated?: unknown } | null
+        if (active && res.ok) setAuthenticated(body?.authenticated === true)
+      } catch {
+        // If the status call fails, the server still enforces auth on refresh.
+      }
+    })()
+    return () => {
+      active = false
+    }
+  }, [])
+
   const start = useCallback(async (kind: SyncKind) => {
     if (busy.current) return
     busy.current = true
     lastKind.current = kind
     tokenRef.current = null
+    setAuthOpen(false)
 
     setState({
       ...INITIAL,
@@ -92,13 +106,17 @@ export function useSync(options: { onCommitted?: () => void | Promise<unknown> }
     try {
       const res = await fetch(`/api/refresh/${kind}`, {
         method: 'POST',
-        headers: { ...adminHeaders() },
         cache: 'no-store',
       })
       const body = (await res.json().catch(() => null)) as unknown
 
       if (!res.ok) {
         const { detail, authRequired } = readError(body, res.status)
+        if (authRequired) {
+          setAuthenticated(false)
+          setAuthOpen(true)
+          setAuthMessage(detail)
+        }
         setState({
           ...INITIAL,
           kind,
@@ -110,6 +128,7 @@ export function useSync(options: { onCommitted?: () => void | Promise<unknown> }
         return
       }
 
+      setAuthenticated(true)
       const preview = body as SyncPreview
       const hasHighlightWork =
         !!preview?.highlights &&
@@ -164,7 +183,7 @@ export function useSync(options: { onCommitted?: () => void | Promise<unknown> }
     try {
       const res = await fetch('/api/refresh/confirm', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...adminHeaders() },
+        headers: { 'Content-Type': 'application/json' },
         cache: 'no-store',
         body: JSON.stringify({ token, ...(selection ? { selection } : {}) }),
       })
@@ -173,6 +192,11 @@ export function useSync(options: { onCommitted?: () => void | Promise<unknown> }
       if (!res.ok) {
         const { detail, authRequired } = readError(body, res.status)
         tokenRef.current = null
+        if (authRequired) {
+          setAuthenticated(false)
+          setAuthOpen(true)
+          setAuthMessage(detail)
+        }
         setState({
           ...INITIAL,
           kind: lastKind.current,
@@ -227,7 +251,7 @@ export function useSync(options: { onCommitted?: () => void | Promise<unknown> }
     })
   }, [])
 
-  /** Re-run the last sync, e.g. after supplying the optional admin token. */
+  /** Re-run the last sync after a successful admin sign-in. */
   const retry = useCallback(() => {
     void start(lastKind.current)
   }, [start])
@@ -235,15 +259,58 @@ export function useSync(options: { onCommitted?: () => void | Promise<unknown> }
   const dismiss = useCallback(() => {
     if (busy.current) return
     tokenRef.current = null
+    setAuthOpen(false)
     setState(INITIAL)
   }, [])
 
-  const saveAdminToken = useCallback((value: string) => {
-    if (typeof window !== 'undefined') {
-      const trimmed = value.trim()
-      if (trimmed) window.sessionStorage.setItem(ADMIN_TOKEN_KEY, trimmed)
-      else window.sessionStorage.removeItem(ADMIN_TOKEN_KEY)
+  /** Send the password to the server; only the returned HttpOnly cookie proves it. */
+  const login = useCallback(async (password: string): Promise<boolean> => {
+    if (authSubmitting) return false
+    setAuthSubmitting(true)
+    setAuthMessage(null)
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        body: JSON.stringify({ password }),
+      })
+      const body = (await res.json().catch(() => null)) as {
+        error?: unknown
+        authenticated?: unknown
+      } | null
+      if (!res.ok) {
+        const message =
+          typeof body?.error === 'string' && body.error.trim()
+            ? body.error
+            : `Sign-in failed with HTTP ${res.status}`
+        setAuthMessage(message)
+        return false
+      }
+      setAuthenticated(body?.authenticated === true)
+      setAuthOpen(false)
+      setAuthMessage(null)
+      return true
+    } catch (error) {
+      setAuthMessage(error instanceof Error ? error.message : 'Network request failed')
+      return false
+    } finally {
+      setAuthSubmitting(false)
     }
+  }, [authSubmitting])
+
+  /** Clear the session cookie and any uncommitted preview immediately. */
+  const logout = useCallback(async () => {
+    try {
+      await fetch('/api/admin/logout', { method: 'POST', cache: 'no-store' })
+    } catch {
+      // Local state is cleared regardless of the network result.
+    }
+    tokenRef.current = null
+    setAuthenticated(false)
+    setAuthOpen(false)
+    setAuthMessage(null)
+    setState(INITIAL)
   }, [])
 
   const isBusy = state.phase === 'loading' || state.phase === 'committing'
@@ -252,12 +319,17 @@ export function useSync(options: { onCommitted?: () => void | Promise<unknown> }
     ...state,
     isBusy,
     busyKind: isBusy ? state.kind : null,
+    authenticated,
+    authOpen,
+    authMessage,
+    authSubmitting,
     start,
     confirm,
     cancel,
     retry,
     dismiss,
-    saveAdminToken,
+    login,
+    logout,
   }
 }
 

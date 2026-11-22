@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process'
+import { randomBytes } from 'node:crypto'
 import { cpSync, mkdtempSync, rmSync, symlinkSync, unlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -45,6 +46,8 @@ try {
       ...process.env,
       NODE_PATH: path.join(root, 'node_modules'),
       SYNC_SIGNING_SECRET: 'test-only-signing-secret',
+      SYNC_ADMIN_PASSWORD: randomBytes(24).toString('hex'),
+      SYNC_ADMIN_SESSION_SECRET: randomBytes(32).toString('hex'),
       NODE_ENV: 'test',
     },
   })

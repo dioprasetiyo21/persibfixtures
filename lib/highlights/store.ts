@@ -78,7 +78,8 @@ const OPERATION_PRIORITY: Record<HighlightOperation['action'], number> = {
 /**
  * Turn the browser's checkbox/input selection into operations against data that
  * was signed into the preview token. Unknown ids are rejected rather than trusted.
- * Manual URLs are verified with videos.list before they can become published.
+ * Manual URLs are verified with videos.list to enrich metadata; an admin-supplied
+ * URL is still saved when that lookup is unavailable.
  */
 export async function operationsFromSelection(
   signed: PendingHighlights,
@@ -145,17 +146,18 @@ export async function operationsFromSelection(
   const verified = await verifyManualVideos(manualEntries.map((entry) => entry.videoId))
   for (const entry of manualEntries) {
     const result = verified[entry.videoId]
+    // An admin-supplied URL is trusted even when metadata lookup is unavailable.
+    // Verification only enriches the entry; it never decides whether it is saved.
+    const snippet = result?.ok ? result.video?.snippet : undefined
     if (!result?.ok) {
       warnings.push(
-        `Highlight URL for ${entry.fixtureId} could not be verified: ${result?.reason ?? 'unknown error'}. It was not published.`,
+        `Highlight URL for ${entry.fixtureId} could not be verified (${result?.reason ?? 'unknown error'}); it was saved with basic metadata. Check the video if it does not play.`,
       )
-      continue
     }
-    const snippet = result.video?.snippet
     const thumbnailUrl =
-      result.video?.snippet?.thumbnails?.medium?.url ??
-      result.video?.snippet?.thumbnails?.high?.url ??
-      result.video?.snippet?.thumbnails?.default?.url
+      snippet?.thumbnails?.medium?.url ??
+      snippet?.thumbnails?.high?.url ??
+      snippet?.thumbnails?.default?.url
     put({
       fixtureId: entry.fixtureId,
       action: 'publish-manual',
@@ -164,7 +166,7 @@ export async function operationsFromSelection(
       url: watchUrl(entry.videoId),
       title: snippet?.title?.trim() || 'Match highlights',
       channel: snippet?.channelTitle?.trim() || 'Manual URL',
-      ...(result.video?.snippet?.channelId ? { channelId: result.video.snippet.channelId } : {}),
+      ...(snippet?.channelId ? { channelId: snippet.channelId } : {}),
       ...(thumbnailUrl ? { thumbnailUrl } : {}),
       ...(snippet?.publishedAt ? { publishedAt: snippet.publishedAt } : {}),
     })
