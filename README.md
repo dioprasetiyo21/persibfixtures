@@ -1,50 +1,70 @@
-# 🐯 PERSIB FIXTURES 2026/2027 — ALL COMPETITIONS
+# Persib Fixtures
 
 **One Club. One Calendar. Every Match Matters.**
 
-A fan-made match center for **Persib Bandung**, bringing schedules, scores, match statistics, and video highlights together in one place.
+A fan-made match center for **Persib Bandung**, bringing fixtures, results, match information, statistics, and video highlights together in one place.
 
-🌐 **Website:** https://persibfixtures-eight.vercel.app/
+**Live website:** https://persibfixtures.vercel.app/
 
 ---
 
-## ⚽ About
+## Overview
 
-Persib Fixtures is a TypeScript-powered web application for following Persib Bandung throughout the 2026/2027 season. It brings domestic and international competitions into one calendar, with match information and supporting features for Bobotoh.
+Persib Fixtures follows Persib Bandung throughout the 2026/2027 season, across domestic and international competitions. The calendar is designed to make the season easy to follow, while keeping match details and supporting information close at hand.
 
-## ✨ Features
+The project is independently developed for Bobotoh and is not officially affiliated with Persib Bandung.
 
-- 📅 **Match Calendar** — Browse the season's fixtures by month and competition.
-- 🏆 **Competition Filters** — Explore Persib matches across all supported competitions.
-- 🔎 **Match Search** — Find fixtures and opponents quickly.
-- 🔄 **Schedule Refresh** — Retrieve schedule updates from supported competition sources.
-- 🥅 **Score Refresh** — Check and synchronize completed match scores.
-- 👁️ **Preview Before Commit** — Review proposed schedule and score changes before confirming them.
-- 🔐 **Admin-only Refresh** — Password-protected admin access keeps refresh and write operations away from public visitors.
-- 📊 **Match Statistics** — View match statistics when data is available.
-- 🎬 **Match Highlights** — Browse YouTube highlight candidates, approve suggestions, or add a manual YouTube video URL.
-- ▶️ **Embedded Video** — Watch available highlights in the site, with an option to open the video on YouTube when embedding is unavailable.
-- 📝 **Match Details** — Open individual match information, results, venue, and related content.
-- 📤 **Export Options** — Export fixtures to CSV and calendar (ICS) formats.
-- 🕒 **WIB Timezone** — Kickoff times are displayed in Western Indonesian Time (Asia/Jakarta).
+## Features
 
-## 🔐 Admin Refresh & Environment Variables
+### Follow the season
+- **Season calendar** — Browse fixtures by date, month, and competition.
+- **Competition filters** — Focus on a specific competition.
+- **Match search** — Find opponents and fixtures quickly.
+- **Match details** — View available match information, results, and venue details.
+- **WIB kickoff times** — Match times use Western Indonesian Time (Asia/Jakarta).
 
-The calendar and published match information are public. Only the refresh workflow requires admin authentication.
+### Match information
+- **Score refresh** — Retrieve and synchronize completed match scores.
+- **Schedule refresh** — Check for fixture updates from supported sources.
+- **Review before publishing** — Preview proposed changes before confirming them.
+- **Match statistics** — View statistics when data is available.
+- **Match highlights** — Review YouTube highlight suggestions or provide a manual video URL.
+- **Video playback** — Watch supported highlights on the site, with a YouTube fallback when embedding is unavailable.
 
-Configure the following server-side environment variables in Vercel (or in a local `.env.local` file for development):
+### Take the data with you
+- **CSV export** — Export fixture data for spreadsheets and analysis.
+- **ICS export** — Add fixtures to compatible calendar applications.
 
-| Variable | Required | Purpose |
+## Admin refresh workflow
+
+The calendar and published match information are public. Administrative refresh and publishing actions require an authenticated admin session.
+
+The workflow is:
+
+1. Sign in using the admin password.
+2. Run a schedule or score refresh.
+3. Review the proposed changes.
+4. Confirm the changes to publish them to the repository.
+
+The server enforces authentication for protected refresh and confirmation endpoints. Hiding controls in the interface is not the security boundary.
+
+## Configuration
+
+Set environment variables in the deployment environment (for example, Vercel) or in a local `.env.local` file when developing.
+
+### Required for administrative publishing
+
+| Variable | Purpose |
+| --- | --- |
+| `SYNC_ADMIN_PASSWORD` | Password used to access admin refresh controls. |
+| `SYNC_ADMIN_SESSION_SECRET` | Long, randomly generated secret used to sign admin session cookies. Keep it private and stable; it is not a per-login value. |
+| `GITHUB_TOKEN` | GitHub token with repository Contents read/write permission for confirmed data updates. |
+
+### Optional
+
+| Variable | Default / condition | Purpose |
 | --- | --- | --- |
-| `SYNC_ADMIN_PASSWORD` | Yes, for admin refresh | Password used to sign in to the admin refresh controls. |
-| `SYNC_ADMIN_SESSION_SECRET` | Yes, for admin refresh | Long, randomly generated secret used by the server to sign admin session cookies. Keep it private and stable; do not generate a new value for each login. |
-| `GITHUB_TOKEN` | Yes, to write changes | GitHub token with repository Contents read/write permission, used by the confirmation step to save fixture and highlight updates. |
-| `YOUTUBE_API_KEY` | Optional | Enables automatic YouTube highlight search and video metadata lookup. Manual YouTube URLs can still be used when automatic search is unavailable. |
-
-Optional configuration:
-
-| Variable | Default | Purpose |
-| --- | --- | --- |
+| `YOUTUBE_API_KEY` | Not set | Enables automatic YouTube highlight search and video metadata lookup. |
 | `SYNC_LOGIN_RATE_LIMIT` | `10` | Maximum login attempts per IP in the 10-minute window. |
 | `YOUTUBE_HIGHLIGHTS_ENABLED` | Enabled when an API key is configured | Set to `false` to disable automatic YouTube highlight search. |
 | `GITHUB_OWNER` | `dioprasetiyo21` | GitHub repository owner. |
@@ -52,46 +72,45 @@ Optional configuration:
 | `GITHUB_BRANCH` | `main` | Branch used by the refresh writeback flow. |
 | `HIGHLIGHTS_FILE_PATH` | `data/highlights.json` | Repository path for published match highlights. |
 
-**Security notes**
-- Never commit `.env.local` or expose environment variable values in client-side code.
-- Do not use the `NEXT_PUBLIC_` prefix for secrets.
-- Keep `SYNC_ADMIN_SESSION_SECRET` unchanged between deployments unless you intend to invalidate existing admin sessions.
-- Admin access is enforced by the server API, not only by hiding refresh controls in the interface.
-- Public visitors can continue to browse the calendar without signing in.
+### Security
 
-## 🛠️ Tech Stack
+- Never commit `.env.local` or expose secret values in client-side code.
+- Do not use the `NEXT_PUBLIC_` prefix for secrets.
+- Keep `SYNC_ADMIN_SESSION_SECRET` private and unchanged between deployments unless you intend to invalidate existing admin sessions.
+- Public visitors can browse the calendar without signing in.
+
+## Technology
 
 - Next.js 16 (App Router)
 - React 19
 - TypeScript
 - Tailwind CSS
-- shadcn/ui-style components
 - SWR
-- YouTube Data API v3 (server-side, optional)
-- GitHub Contents API for admin-confirmed data writeback
+- YouTube Data API v3 (optional, server-side)
+- GitHub Contents API for admin-confirmed data publishing
 
-## 📁 Project Structure
+## Project structure
 
 ```text
 persibfixtures/
-├── app/              # Next.js App Router and API routes
-├── components/       # Calendar, match details, sync, and highlight UI
-├── hooks/            # Client-side data and admin sync hooks
-├── lib/              # Shared logic, data sources, admin auth, and sync
-├── data/             # Fixture, result, and highlight datasets
-├── public/           # Static assets
-├── tests/            # Runtime and feature tests
-└── package.json      # Dependencies and scripts
+├── app/          # Application pages and API routes
+├── components/   # Calendar, match details, sync, and highlight UI
+├── hooks/        # Client-side data and admin sync hooks
+├── lib/          # Shared logic, data sources, authentication, and sync
+├── data/         # Fixture, result, and highlight datasets
+├── public/       # Static assets
+├── tests/        # Runtime and feature tests
+└── package.json  # Dependencies and scripts
 ```
 
-## 🚀 Getting Started
+## Run locally
 
 ### Requirements
 
 - Node.js
 - pnpm 12.3.4
 
-### Installation
+### Install dependencies
 
 ```bash
 git clone https://github.com/dioprasetiyo21/persibfixtures.git
@@ -99,38 +118,40 @@ cd persibfixtures
 npx pnpm@12.3.4 install
 ```
 
-### Environment setup
+### Configure environment
 
-Create a `.env.local` file in the project root. Add the server-side variables needed for the features you want to test. For admin refresh and GitHub writeback, configure `SYNC_ADMIN_PASSWORD`, `SYNC_ADMIN_SESSION_SECRET`, and `GITHUB_TOKEN`. Add `YOUTUBE_API_KEY` to enable automatic highlight search.
+Create a `.env.local` file in the project root and add the variables required for the features you want to run. Administrative publishing requires `SYNC_ADMIN_PASSWORD`, `SYNC_ADMIN_SESSION_SECRET`, and `GITHUB_TOKEN`. Add `YOUTUBE_API_KEY` to enable automatic highlight search.
 
-Do not commit this file.
+Do not commit `.env.local`.
 
-### Development
+### Start the development server
 
 ```bash
 npx pnpm@12.3.4 dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000).
 
-### Tests
+### Run tests
 
 ```bash
 pnpm test
 ```
 
-### Production Build
+### Create a production build
 
 ```bash
 pnpm build
 ```
 
-## 💙 Made for Bobotoh
+---
 
-Built with passion for Persib Bandung and everyone who follows the journey.
+## For Bobotoh
 
-**PERSIB SALAWASNA!** 🐯
+Made independently for everyone following the journey of Persib Bandung.
+
+**PERSIB SALAWASNA!**
 
 ---
 
-*An independent fan-made project. Not officially affiliated with Persib Bandung or its management.*
+*Persib Fixtures is an independent fan-made project and is not officially affiliated with Persib Bandung or its management.*
