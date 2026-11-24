@@ -1,29 +1,29 @@
-# Persib Fixtures
+# 🐯 Persib Fixtures 2026/2027
 
 **One Club. One Calendar. Every Match Matters.**
 
 A fan-made match center for **Persib Bandung**, bringing fixtures, results, match information, statistics, and video highlights together in one place.
 
-**Live website:** https://persibfixtures.vercel.app/
+🌐 **Live website:** https://persibfixtures.vercel.app/
 
 ---
 
-## Overview
+## ⚽ Overview
 
 Persib Fixtures follows Persib Bandung throughout the 2026/2027 season, across domestic and international competitions. The calendar is designed to make the season easy to follow, while keeping match details and supporting information close at hand.
 
 The project is independently developed for Bobotoh and is not officially affiliated with Persib Bandung.
 
-## Features
+## ✨ Features
 
-### Follow the season
+### 📅 Follow the season
 - **Season calendar** — Browse fixtures by date, month, and competition.
 - **Competition filters** — Focus on a specific competition.
 - **Match search** — Find opponents and fixtures quickly.
 - **Match details** — View available match information, results, and venue details.
 - **WIB kickoff times** — Match times use Western Indonesian Time (Asia/Jakarta).
 
-### Match information
+### 🎥 Match information
 - **Score refresh** — Retrieve and synchronize completed match scores.
 - **Schedule refresh** — Check for fixture updates from supported sources.
 - **Review before publishing** — Preview proposed changes before confirming them.
@@ -31,11 +31,11 @@ The project is independently developed for Bobotoh and is not officially affilia
 - **Match highlights** — Review YouTube highlight suggestions or provide a manual video URL.
 - **Video playback** — Watch supported highlights on the site, with a YouTube fallback when embedding is unavailable.
 
-### Take the data with you
+### 📤 Take the data with you
 - **CSV export** — Export fixture data for spreadsheets and analysis.
 - **ICS export** — Add fixtures to compatible calendar applications.
 
-## Admin refresh workflow
+## 🔐 Admin refresh workflow
 
 The calendar and published match information are public. Administrative refresh and publishing actions require an authenticated admin session.
 
@@ -48,11 +48,11 @@ The workflow is:
 
 The server enforces authentication for protected refresh and confirmation endpoints. Hiding controls in the interface is not the security boundary.
 
-## Configuration
+## ⚙️ Configuration
 
 Set environment variables in the deployment environment (for example, Vercel) or in a local `.env.local` file when developing.
 
-### Required for administrative publishing
+### 🔑 Required for administrative publishing
 
 | Variable | Purpose |
 | --- | --- |
@@ -60,7 +60,7 @@ Set environment variables in the deployment environment (for example, Vercel) or
 | `SYNC_ADMIN_SESSION_SECRET` | Long, randomly generated secret used to sign admin session cookies. Keep it private and stable; it is not a per-login value. |
 | `GITHUB_TOKEN` | GitHub token with repository Contents read/write permission for confirmed data updates. |
 
-### Optional
+### 🧩 Optional
 
 | Variable | Default / condition | Purpose |
 | --- | --- | --- |
@@ -72,14 +72,14 @@ Set environment variables in the deployment environment (for example, Vercel) or
 | `GITHUB_BRANCH` | `main` | Branch used by the refresh writeback flow. |
 | `HIGHLIGHTS_FILE_PATH` | `data/highlights.json` | Repository path for published match highlights. |
 
-### Security
+### 🛡️ Security
 
 - Never commit `.env.local` or expose secret values in client-side code.
 - Do not use the `NEXT_PUBLIC_` prefix for secrets.
 - Keep `SYNC_ADMIN_SESSION_SECRET` private and unchanged between deployments unless you intend to invalidate existing admin sessions.
 - Public visitors can browse the calendar without signing in.
 
-## Technology
+## 🧰 Technology
 
 - Next.js 16 (App Router)
 - React 19
@@ -89,7 +89,7 @@ Set environment variables in the deployment environment (for example, Vercel) or
 - YouTube Data API v3 (optional, server-side)
 - GitHub Contents API for admin-confirmed data publishing
 
-## Project structure
+## 🗂️ Project structure
 
 ```text
 persibfixtures/
@@ -103,14 +103,14 @@ persibfixtures/
 └── package.json  # Dependencies and scripts
 ```
 
-## Run locally
+## 🚀 Run locally
 
-### Requirements
+### 📋 Requirements
 
 - Node.js
 - pnpm 12.3.4
 
-### Install dependencies
+### 📦 Install dependencies
 
 ```bash
 git clone https://github.com/dioprasetiyo21/persibfixtures.git
@@ -118,13 +118,13 @@ cd persibfixtures
 npx pnpm@12.3.4 install
 ```
 
-### Configure environment
+### 🔧 Configure environment
 
 Create a `.env.local` file in the project root and add the variables required for the features you want to run. Administrative publishing requires `SYNC_ADMIN_PASSWORD`, `SYNC_ADMIN_SESSION_SECRET`, and `GITHUB_TOKEN`. Add `YOUTUBE_API_KEY` to enable automatic highlight search.
 
 Do not commit `.env.local`.
 
-### Start the development server
+### 💻 Start the development server
 
 ```bash
 npx pnpm@12.3.4 dev
@@ -132,13 +132,13 @@ npx pnpm@12.3.4 dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-### Run tests
+### 🧪 Run tests
 
 ```bash
 pnpm test
 ```
 
-### Create a production build
+### 🏗️ Create a production build
 
 ```bash
 pnpm build
@@ -146,11 +146,11 @@ pnpm build
 
 ---
 
-## For Bobotoh
+## 💙 For Bobotoh
 
 Made independently for everyone following the journey of Persib Bandung.
 
-**PERSIB SALAWASNA!**
+**PERSIB SALAWASNA!** 🐯
 
 ---
 
