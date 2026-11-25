@@ -28,8 +28,11 @@ function dedupe(matches: SourceMatch[]): SourceMatch[] {
       byKey.set(key, match)
       continue
     }
-    // A finished row carries more information than a scheduled duplicate.
-    if (existing.status !== 'finished' && match.status === 'finished') byKey.set(key, match)
+    // Prefer the row with the most verified information; a finished row with
+    // goals/context must not lose to a bare finished duplicate.
+    const rank = (row: SourceMatch) =>
+      (row.status === 'finished' ? 1 : 0) + (row.goals?.length ? 2 : 0) + (row.context ? 1 : 0)
+    if (rank(match) > rank(existing)) byKey.set(key, match)
   }
   return [...byKey.values()]
 }
@@ -55,6 +58,7 @@ export async function collectSourceMatches(
       scrapeIleague(cfg, {
         fresh: options.fresh,
         weeks: options.weeksByCompetition?.[cfg.competition],
+        kind,
       }).then(({ matches, report }) => {
         all.push(...matches)
         reports.push(report)
@@ -64,7 +68,7 @@ export async function collectSourceMatches(
 
   if (competitions.has('ACC')) {
     tasks.push(
-      scrapeAcc({ fresh: options.fresh }).then(({ matches, report }) => {
+      scrapeAcc({ fresh: options.fresh, kind }).then(({ matches, report }) => {
         all.push(...matches)
         reports.push(report)
       }),

@@ -2,7 +2,7 @@ import { ACC_MATCHES_URL, ACC_SOURCE_TZ } from '../config'
 import { fetchText } from '../http'
 import { cleanText, isPersib } from '../teams'
 import { convertToWib, isIanaZone } from '../timezone'
-import type { SourceMatch, SourceReport } from '../types'
+import type { SourceGoal, SourceMatch, SourceReport, SyncKind } from '../types'
 
 const MONTHS: Record<string, string> = {
   jan: '01',
@@ -127,11 +127,121 @@ function parseCard(card: string): ParsedCard | null {
   }
 }
 
+/* ------------------------------ goal detail enrichment ------------------------------ */
+
+function accDetailUrl(matchId: string): string {
+  const base = ACC_MATCHES_URL.replace(/\/matches\/?$/, '')
+  return `${base}/match/${encodeURIComponent(matchId)}/details`
+}
+
+function accTeamId(name: string): string {
+  return cleanText(name).toUpperCase()
+}
+
+function normalizeAccMinute(raw: string): string | null {
+  const text = cleanText(raw)
+  const added = text.match(/(\d{1,3})\s*'\s*\+\s*(\d{1,2})\s*'/)
+  if (added) return `${added[1]}+${added[2]}'`
+  const plain = text.match(/(\d{1,3})\s*'/)
+  return plain ? `${plain[1]}'` : null
+}
+
+/**
+ * The detail page splits scorers into a home column (`first-hlf-goal-comm`)
+ * and an away column (`scnd-hlf-goal-comm`), despite the half-time class names.
+ * Goal rows that cannot be tied to a side or to a minute are ignored.
+ */
+function parseAccGoals(html: string, homeTeam: string, awayTeam: string): SourceGoal[] | null {
+  const section = html.match(
+    /<div class="goal-comm-div-top">([\s\S]*?)<\/div>\s*<!--goals details ends-->/,
+  )
+  if (!section) return null
+
+  const [homePart = '', awayPart = ''] = section[1].split(
+    /<div class="mid-prt-goal-comm">[\s\S]*?<\/div>/,
+  )
+  const goals: SourceGoal[] = []
+
+  for (const [part, team] of [
+    [homePart, homeTeam],
+    [awayPart, awayTeam],
+  ] as const) {
+    const id = accTeamId(team)
+    for (const row of part.matchAll(/<div class="plyr-info d-flex">([\s\S]*?)<\/div>/g)) {
+      const nameMatch = row[1].match(/<h4>([\s\S]*?)<\/h4>/)
+      const minuteMatch = row[1].match(/<span>([\s\S]*?)<\/span>/)
+      if (!nameMatch || !minuteMatch) continue
+      const playerName = cleanText(nameMatch[1]).replace(/\s*\((?:og|p|pen|penalty)\)\s*$/i, '').trim()
+      const minute = normalizeAccMinute(minuteMatch[1])
+      if (!playerName || !minute) continue
+      goals.push({
+        playerName,
+        minute,
+        teamId: id,
+        ownGoal: /\(og\)|own\s*goal/i.test(nameMatch[1]),
+        penaltyGoal: /\(p(?:en|alty)?\)|penalty/i.test(nameMatch[1]),
+      })
+    }
+  }
+
+  return goals.length > 0 ? goals : null
+}
+
+/** Best-effort enrichment; a broken or inconsistent detail page never changes the score. */
+async function withAccGoals(
+  matches: SourceMatch[],
+  revalidate: number,
+): Promise<{ matches: SourceMatch[]; failed: number }> {
+  const candidates = matches.filter(
+    (match) =>
+      match.status === 'finished' &&
+      match.homeScore !== null &&
+      match.awayScore !== null &&
+      /^[A-Za-z0-9]+$/.test(match.sourceMatchId ?? ''),
+  )
+  if (candidates.length === 0) return { matches, failed: 0 }
+
+  const enriched = await Promise.all(
+    candidates.map(async (match) => {
+      try {
+        const html = await fetchText(accDetailUrl(match.sourceMatchId as string), { revalidate })
+        const goals = parseAccGoals(html, match.homeTeam, match.awayTeam)
+        if (!goals) return null
+        const homeId = accTeamId(match.homeTeam)
+        const awayId = accTeamId(match.awayTeam)
+        const homeGoals = goals.filter((goal) => goal.teamId === homeId).length
+        const awayGoals = goals.filter((goal) => goal.teamId === awayId).length
+        if (homeGoals !== match.homeScore || awayGoals !== match.awayScore) return null
+        return { ...match, homeTeamId: homeId, awayTeamId: awayId, goals }
+      } catch {
+        return null
+      }
+    }),
+  )
+
+  const replacements = new Map<string, SourceMatch>()
+  for (let index = 0; index < candidates.length; index++) {
+    const result = enriched[index]
+    if (result) replacements.set(candidates[index].sourceMatchId as string, result)
+  }
+
+  let failed = 0
+  const next = matches.map((match) => {
+    const replacement = replacements.get(match.sourceMatchId ?? '')
+    if (!replacement) {
+      if (candidates.includes(match)) failed++
+      return match
+    }
+    return replacement
+  })
+  return { matches: next, failed }
+}
+
 /**
  * Scrape the ASEAN Club Championship (Shopee Cup) match list published by
  * ASEAN United FC, converting every kickoff to WIB with IANA rules.
  */
-export async function scrapeAcc(options: { fresh?: boolean } = {}): Promise<{
+export async function scrapeAcc(options: { fresh?: boolean; kind?: SyncKind } = {}): Promise<{
   matches: SourceMatch[]
   report: SourceReport
 }> {
@@ -157,7 +267,7 @@ export async function scrapeAcc(options: { fresh?: boolean } = {}): Promise<{
   }
 
   const sections = html.split(SECTION_SPLIT).filter((s) => s.includes('mn-dt-part'))
-  const matches: SourceMatch[] = []
+  let matches: SourceMatch[] = []
   const declaredZones = new Set<string>()
   const unresolved: string[] = []
   const shifted: string[] = []
@@ -227,6 +337,16 @@ export async function scrapeAcc(options: { fresh?: boolean } = {}): Promise<{
     notes.push(`Timezone not resolvable for ${unresolved.length} kickoff(s); left unconfirmed: ${unresolved.join('; ')}.`)
   }
   notes.push('The match list publishes the group but no matchday number, so existing round labels are left unchanged.')
+
+  // Detail enrichment is scores-only. Schedule refreshes keep the original
+  // source report and must not fetch scorer pages or add a failure note.
+  if (options.kind === 'scores') {
+    const enriched = await withAccGoals(matches, options.fresh ? 0 : 120)
+    matches = enriched.matches
+    if (enriched.failed > 0) {
+      notes.push(`${enriched.failed} result detail page(s) had no scorer list matching the final score; scores were left unchanged.`)
+    }
+  }
   report.note = notes.join(' ')
 
   report.found = matches.length

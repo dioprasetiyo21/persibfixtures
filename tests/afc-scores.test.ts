@@ -62,7 +62,8 @@ const payload = {
 
 let lastFetchUrl = ''
 http.fetchText = (async (url: string) => {
-  lastFetchUrl = url
+  // The optional AFC article fetch must not overwrite the feed URL assertion.
+  if (url.includes('/api/live/fixtures')) lastFetchUrl = url
   return JSON.stringify(payload)
 }) as never
 

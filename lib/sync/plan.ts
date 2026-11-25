@@ -2,6 +2,7 @@ import { STATUS_LABEL } from '@/lib/fixtures'
 import type { CompetitionId, MatchStatus, RawFixture, VenueType } from '@/lib/types'
 import { cloneDataset } from './dataset'
 import { TZ } from './config'
+import { buildGoalsNote, mergeNotes } from './notes'
 import { isPersib, isPlaceholderTeam, sameTeam, sameVenue, cleanText } from './teams'
 import type {
   ChangeKind,
@@ -249,9 +250,31 @@ function scoreFields(
   }
   if (distance !== null && distance > 3) warnings.push(`Result published ${distance} days from the stored date`)
 
+  // Notes are optional enrichment from the same official source. If the feed
+  // has no goals or the article check fails, the score path stays untouched.
+  const goalsNote = row.goals?.length
+    ? buildGoalsNote({
+        goals: row.goals,
+        homeTeam: row.homeTeam,
+        awayTeam: row.awayTeam,
+        homeTeamId: row.homeTeamId,
+        awayTeamId: row.awayTeamId,
+      })
+    : null
+  const mergedNotes = mergeNotes(
+    fixture.notes,
+    goalsNote,
+    row.context?.text ?? null,
+    row.goals?.length ?? 0,
+    row.goals?.map((goal) => goal.playerName) ?? [],
+  )
+
   const sameScore =
     fixture.score && fixture.score.persib === persibScore && fixture.score.opponent === opponentScore
-  if (sameScore && fixture.status === 'finished') return { set, clear, warnings }
+  if (sameScore && fixture.status === 'finished') {
+    if (mergedNotes && mergedNotes !== fixture.notes) set.notes = mergedNotes
+    return { set, clear, warnings }
+  }
 
   if (fixture.score && !sameScore) {
     warnings.push(
@@ -261,6 +284,7 @@ function scoreFields(
 
   set.score = { persib: persibScore, opponent: opponentScore }
   set.status = 'finished'
+  if (mergedNotes && mergedNotes !== fixture.notes) set.notes = mergedNotes
   return { set, clear, warnings }
 }
 

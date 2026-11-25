@@ -11,6 +11,23 @@ import type {
 /** Which synchronisation flow produced a preview. */
 export type SyncKind = 'schedule' | 'scores'
 
+/** A goal as published by a source. Nothing here is inferred from the score. */
+export interface SourceGoal {
+  playerName: string
+  /** Source-formatted minute, e.g. `6'`, `90+2'`. */
+  minute: string | null
+  /** Source team id: the side credited with the goal (including own goals). */
+  teamId: string | null
+  ownGoal: boolean
+  penaltyGoal: boolean
+}
+
+/** A short achievement backed by an explicit statement in an official source. */
+export interface SourceContext {
+  text: string
+  sourceUrl: string
+}
+
 /** A fixture row normalised from an official competition source. */
 export interface SourceMatch {
   /** Human readable source name shown in the preview. */
@@ -25,12 +42,18 @@ export interface SourceMatch {
   kickoff: string | null
   homeTeam: string
   awayTeam: string
+  /** Source team ids, used only to attribute goals to home/away. */
+  homeTeamId?: string | null
+  awayTeamId?: string | null
   homeScore: number | null
   awayScore: number | null
   status: 'scheduled' | 'live' | 'finished' | 'postponed' | 'cancelled' | 'unknown'
   stadium: string | null
   /** Stable identifier from the source (URL slug, match id, …). */
   sourceMatchId: string | null
+  /** Optional enrichment; absence must never block a score update. */
+  goals?: SourceGoal[]
+  context?: SourceContext
 }
 
 export interface SourceReport {

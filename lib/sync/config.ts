@@ -95,6 +95,11 @@ export const AFC_COMPETITION_CODES = str(
   process.env.AFC_COMPETITION_CODES,
   'afc-champions-league-two',
 )
+/** Official AFC page whose server-rendered payload carries match report articles. */
+export const AFC_FIXTURES_PAGE_URL = str(
+  process.env.AFC_FIXTURES_PAGE_URL,
+  'https://www.the-afc.com/en/club/afc_champions_league_two/fixtures__standings.html',
+)
 
 export const FETCH_TIMEOUT_MS = int(process.env.SYNC_FETCH_TIMEOUT_MS, 15_000)
 
