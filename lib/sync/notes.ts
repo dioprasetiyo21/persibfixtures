@@ -107,8 +107,11 @@ export function buildGoalsNote(input: GoalsNoteInput): string | null {
 }
 
 function splitSentences(text: string): string[] {
+  // A period after a single capital is a player initial (e.g. "B. Sekulić"),
+  // not a sentence boundary. Splitting there used to leave goal fragments
+  // behind as "context" and duplicate the scorer list on the next refresh.
   return text
-    .split(/(?<=\.)\s+/)
+    .split(/(?<=\.)(?<!\b[A-Z]\.)\s+/)
     .map((sentence) => sentence.trim())
     .filter(Boolean)
 }

@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import type { RawFixture } from '../lib/types'
+import type { SourceGoal, SourceMatch } from '../lib/sync/types'
 
 const http = require('../lib/sync/http') as typeof import('../lib/sync/http')
 const acc = require('../lib/sync/sources/acc') as typeof import('../lib/sync/sources/acc')
@@ -241,4 +243,89 @@ test('score planning writes enriched notes without changing an already correct s
   assert.equal(changes.length, 1)
   assert.equal(changes[0].set.score, undefined, 'a correct score must not be rewritten')
   assert.match(String(changes[0].set.notes), /Luka Menalo \(2\) 36', 44'/)
+})
+
+const ACC02_NOTE = "Goals: B. Sekulić (2) 12', 66', M. Peralta 17', L. Menalo 52', A. Alis 81', Uilliam Barros 89'."
+const ACC02_FULL_NOTE = "Goals: Balša Sekulic (2) 12', 66', Mariano Peralta 17', Luka Menalo 52', Adam Alis 81', Uilliam Barros 89'."
+const ACC02_NAMES = ['B. Sekulić', 'M. Peralta', 'L. Menalo', 'A. Alis', 'Uilliam Barros']
+const ACC02_FULL_NAMES = ['Balša Sekulic', 'Mariano Peralta', 'Luka Menalo', 'Adam Alis', 'Uilliam Barros']
+
+test('mergeNotes leaves the exact acc-02 note unchanged when the source repeats it', () => {
+  assert.equal(notes.mergeNotes(ACC02_NOTE, ACC02_NOTE, null, 6, ACC02_NAMES), undefined)
+  assert.equal(notes.mergeNotes(ACC02_NOTE, ACC02_FULL_NOTE, null, 6, ACC02_FULL_NAMES), undefined)
+})
+
+test('mergeNotes keeps achievement context when player initials are upgraded', () => {
+  const partial = "Goals: B. Sekulić 12', M. Peralta 17'. Secured top spot in Group B."
+  const result = notes.mergeNotes(partial, ACC02_NOTE, null, 6, ACC02_NAMES)
+
+  assert.equal(result, `${ACC02_NOTE} Secured top spot in Group B.`)
+  assert.equal((result ?? '').split('Secured top spot in Group B.').length - 1, 1)
+})
+
+function acc02Fixture(note: string): RawFixture {
+  return {
+    id: 'acc-02',
+    competition: 'ACC',
+    round: 'Group B · Matchday 2',
+    date: '2026-11-19',
+    kickoff: '19:00',
+    kickoffConfirmed: true,
+    opponent: 'Shan United',
+    venueType: 'home',
+    stadium: 'Stadion Gelora Bandung Lautan Api',
+    status: 'finished',
+    score: { persib: 6, opponent: 0 },
+    notes: note,
+    sourceKey: 'acc',
+    verifiedAt: '2026-11-26',
+  }
+}
+
+const acc02Goals: SourceGoal[] = [
+  { playerName: 'B. Sekulić', minute: "12'", teamId: 'PERSIB', ownGoal: false, penaltyGoal: false },
+  { playerName: 'B. Sekulić', minute: "66'", teamId: 'PERSIB', ownGoal: false, penaltyGoal: false },
+  { playerName: 'M. Peralta', minute: "17'", teamId: 'PERSIB', ownGoal: false, penaltyGoal: false },
+  { playerName: 'L. Menalo', minute: "52'", teamId: 'PERSIB', ownGoal: false, penaltyGoal: false },
+  { playerName: 'A. Alis', minute: "81'", teamId: 'PERSIB', ownGoal: false, penaltyGoal: false },
+  { playerName: 'Uilliam Barros', minute: "89'", teamId: 'PERSIB', ownGoal: false, penaltyGoal: false },
+]
+
+const acc02Row: SourceMatch = {
+  source: 'ASEAN United FC – Shopee Cup',
+  sourceUrl: 'https://aseanutdfc.com/id/asean-club-championship/matches',
+  competition: 'ACC',
+  week: null,
+  date: '2026-11-19',
+  kickoff: '19:00',
+  homeTeam: 'Persib Bandung',
+  awayTeam: 'Shan United',
+  homeTeamId: 'PERSIB',
+  awayTeamId: 'SHAN UNITED',
+  homeScore: 6,
+  awayScore: 0,
+  status: 'finished',
+  stadium: 'Stadion Gelora Bandung Lautan Api',
+  sourceMatchId: 'acc02',
+  goals: acc02Goals,
+}
+
+test('acc-02 refresh is a no-op when the stored note already matches the source', () => {
+  const { changes, unchanged } = plan.buildPlan('scores', [acc02Fixture(ACC02_NOTE)], [acc02Row])
+
+  assert.equal(changes.length, 0)
+  assert.equal(unchanged, 1)
+})
+
+test('acc-02 initials note is upgraded once and the second refresh is idempotent', () => {
+  const partial = "Goals: B. Sekulić 12', M. Peralta 17'."
+  const first = plan.buildPlan('scores', [acc02Fixture(partial)], [acc02Row])
+
+  assert.equal(first.changes.length, 1)
+  assert.equal(first.changes[0].set.score, undefined, 'a correct score must not be rewritten')
+  assert.equal(first.changes[0].set.notes, ACC02_NOTE)
+
+  const second = plan.buildPlan('scores', [acc02Fixture(ACC02_NOTE)], [acc02Row])
+  assert.equal(second.changes.length, 0, 'a second refresh must not duplicate the scorer list')
+  assert.equal(second.unchanged, 1)
 })
